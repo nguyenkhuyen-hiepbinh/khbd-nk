@@ -1,0 +1,2212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Soạn KHBD Hóa học 10 - hoàn thiện</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal-1:#13241F; --teal-2:#1B362F; --teal-3:#234740;
+    --cream:#EFE7D4; --cream-dim:#C9C0A8;
+    --copper:#C97B3D; --copper-light:#E3A06A;
+    --sage:#7FAE8E;
+    --paper:#FBF7EE; --paper-edge:#E4DAC2;
+    --ink:#2B2A24; --ink-muted:#6E6A5C;
+    --danger:#B5533F;
+    --r-sm:6px; --r-md:10px; --r-lg:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Inter',sans-serif; color:var(--ink); background:var(--teal-1);
+    height:100vh; overflow:hidden;
+  }
+  .app{ display:grid; grid-template-columns: 340px 1fr; height:100vh; }
+  body.access-locked .app{ display:none; }
+  .access-gate{
+    min-height:100vh; display:none; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#123631,#174941 55%,#0f261f); padding:24px;
+  }
+  body.access-locked .access-gate{ display:flex; }
+  .access-card{
+    width:min(440px,100%); background:#fff; color:#20332D; border:1px solid rgba(255,255,255,.18);
+    border-radius:8px; box-shadow:0 24px 70px rgba(0,0,0,.32); padding:28px 30px 30px;
+  }
+  .access-card h1{ margin:0 0 6px; font-family:'Source Serif 4',serif; font-size:24px; color:#173C32; }
+  .access-card p{ margin:0 0 18px; color:#687A71; font-size:13px; line-height:1.55; }
+  .access-card label{ display:block; margin-bottom:7px; color:#315247; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+  .access-card input{
+    width:100%; min-height:44px; border:1px solid #C9D8CF; border-radius:6px; padding:10px 12px;
+    font-size:15px; color:#20332D; background:#F8FAF8; outline:none;
+  }
+  .access-card input:focus{ border-color:#E2A247; box-shadow:0 0 0 3px rgba(226,162,71,.16); }
+  .access-actions{ display:flex; gap:10px; margin-top:14px; }
+  .access-actions .btn{ flex:1; }
+  .access-error{ min-height:18px; margin-top:10px; color:#B5533F; font-size:12.5px; line-height:1.4; }
+  .access-note{ margin-top:14px; padding-top:12px; border-top:1px solid #E3ECE5; color:#7A897F; font-size:11.5px; line-height:1.45; }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    background:linear-gradient(180deg,var(--teal-1),var(--teal-2) 60%, var(--teal-3));
+    color:var(--cream); padding:22px 20px 20px; overflow-y:auto;
+    display:flex; flex-direction:column; gap:16px;
+    border-right:1px solid #0c1815;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+  .brand-tile{
+    width:34px; height:34px; border-radius:7px; background:var(--copper);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--teal-1); font-size:15px;
+    box-shadow:0 0 0 2px rgba(201,123,61,.25);
+  }
+  .brand-text h1{ font-family:'Source Serif 4',serif; font-size:17px; margin:0; line-height:1.2; font-weight:700;}
+  .brand-text p{ margin:1px 0 0; font-size:11px; color:var(--cream-dim); letter-spacing:.02em;}
+
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--cream-dim); font-weight:600;}
+  select, input[type=text], input[type=number], textarea{
+    width:100%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14);
+    color:var(--cream); padding:9px 10px; border-radius:var(--r-sm); font-family:'Inter',sans-serif;
+    font-size:13.5px; outline:none; transition:border-color .15s, background .15s;
+  }
+  select:focus, input:focus, textarea:focus{ border-color:var(--copper-light); background:rgba(255,255,255,.1); }
+  select option{ color:#111; }
+  textarea{ resize:vertical; min-height:54px; line-height:1.4; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .divider{ height:1px; background:rgba(255,255,255,.1); margin:4px 0; }
+
+  .yccd-box{
+    background:rgba(0,0,0,.18); border:1px solid rgba(255,255,255,.08);
+    border-radius:var(--r-md); padding:12px 12px 4px;
+  }
+  .yccd-box .field label{ color:var(--sage); }
+  .yccd-box textarea{ background:transparent; border:none; padding:0 0 8px; font-size:13px; color:#E9E4D2; }
+
+  /* periodic-table style NLS tiles */
+  .nls-label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--cream-dim); font-weight:600; margin-bottom:8px;}
+  .nls-tiles{ display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px; }
+  .nls-tile{
+    width:46px; height:46px; border-radius:5px; background:var(--teal-3);
+    border:1px solid rgba(255,255,255,.18); position:relative; cursor:default;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .nls-tile .num{ position:absolute; top:2px; left:4px; font-family:'JetBrains Mono',monospace; font-size:8px; color:var(--cream-dim);}
+  .nls-tile .sym{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:15px; color:var(--copper-light);}
+  .nls-tile.active{ background:var(--copper); border-color:var(--copper-light); }
+  .nls-tile.active .sym{ color:var(--teal-1); }
+  .nls-tile.active .num{ color:rgba(20,15,5,.55); }
+  .nls-meta{ font-size:12.5px; color:#DDD6BE; line-height:1.55; }
+  .nls-meta b{ color:var(--sage); font-weight:600; }
+  .nls-meta div{ margin-bottom:5px; }
+
+  .nls-indicators-toggle{
+    margin-top:8px; background:none; border:1px solid rgba(255,255,255,.15); color:var(--cream-dim);
+    font-family:'Inter',sans-serif; font-size:11px; font-weight:600; cursor:pointer;
+    padding:6px 9px; border-radius:var(--r-sm); display:flex; align-items:center; justify-content:space-between; width:100%;
+  }
+  .nls-indicators-toggle:hover{ background:rgba(255,255,255,.06); color:var(--cream); }
+  .nls-indicators{
+    margin-top:8px; max-height:260px; overflow-y:auto; border-top:1px dashed rgba(255,255,255,.14);
+    padding-top:8px; display:none;
+  }
+  .nls-indicators.open{ display:block; }
+  .nls-indicators .ind-item{ margin-bottom:11px; }
+  .nls-indicators .ind-head{ display:flex; gap:6px; align-items:baseline; margin-bottom:3px; }
+  .nls-indicators .ind-code{
+    font-family:'JetBrains Mono',monospace; color:var(--teal-1); background:var(--copper-light);
+    font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; flex-shrink:0;
+  }
+  .nls-indicators .ind-ten{ font-size:12px; color:#EFE9D6; font-weight:600; }
+  .nls-indicators ul{ margin:0; padding-left:15px; font-size:11.3px; color:#BDB69E; line-height:1.5; }
+  .nls-indicators ul li{ margin-bottom:2px; }
+  .nls-indicators-note{ font-size:10px; color:var(--cream-dim); font-style:italic; margin-top:6px; line-height:1.4; }
+
+  .btn{
+    border:none; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600;
+    border-radius:var(--r-sm); padding:11px 16px; font-size:13.5px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:transform .08s, filter .15s;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{ background:var(--copper); color:#2A1607; margin-top:4px; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-primary:disabled{ opacity:.55; cursor:not-allowed; }
+  .btn-ghost{ background:rgba(255,255,255,.07); color:var(--cream); border:1px solid rgba(255,255,255,.15); }
+  .btn-ghost:hover{ background:rgba(255,255,255,.12); }
+
+  .sidebar-foot{ margin-top:auto; font-size:10.5px; color:var(--cream-dim); line-height:1.5; padding-top:8px; }
+
+  /* ---------- MAIN / PAPER ---------- */
+  .main{ background:var(--teal-1); display:flex; flex-direction:column; height:100vh; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .topbar h2{ color:var(--cream); font-family:'Source Serif 4',serif; font-weight:600; font-size:18px; margin:0;}
+  .topbar .sub{ color:var(--cream-dim); font-size:12px; margin-top:2px;}
+  .top-actions{ display:flex; gap:8px; }
+
+  .canvas-wrap{ flex:1; overflow-y:auto; padding:30px 0 60px; display:flex; justify-content:center; }
+  .paper{
+    width:min(780px, 92%); background:var(--paper); border:1px solid var(--paper-edge);
+    border-radius:3px; box-shadow:0 18px 50px rgba(0,0,0,.45);
+    padding:50px 56px 64px; font-family:'Source Serif 4',serif; color:var(--ink); min-height:600px;
+  }
+  .paper h3.title{ text-align:center; font-size:19px; margin:0 0 2px; letter-spacing:.01em; }
+  .paper .school-line{ text-align:center; font-size:12px; color:var(--ink-muted); font-family:'Inter',sans-serif; margin-bottom:22px;}
+  .meta-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:4px 24px; font-family:'Inter',sans-serif;
+    font-size:12.5px; color:var(--ink-muted); border-top:1px solid var(--paper-edge); border-bottom:1px solid var(--paper-edge);
+    padding:10px 0; margin-bottom:26px;
+  }
+  .sec-h{ font-size:15px; font-weight:700; margin:26px 0 10px; color:var(--ink); }
+  .sec-h.roman{ font-size:15.5px; }
+  .sub-h{ font-weight:700; font-size:13.5px; margin:16px 0 6px; color:#3D3A30; }
+  .section-body{
+    font-family:'Inter',sans-serif; font-size:13.6px; line-height:1.65; white-space:pre-wrap;
+    outline:none; min-height:22px;
+  }
+  .section-body:empty:before{ content:attr(data-placeholder); color:#B8B1A0; font-style:italic; }
+  .section-body.loading{ color:#B8B1A0; font-style:italic; }
+  .hr{ border:none; border-top:1px dashed var(--paper-edge); margin:22px 0; }
+
+  .placeholder-state{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;
+    color:var(--cream-dim); text-align:center; gap:10px; font-family:'Inter',sans-serif; padding:40px;
+  }
+  .placeholder-state .big{ font-family:'Source Serif 4',serif; font-size:20px; color:var(--cream); }
+
+  .spinner{
+    width:13px; height:13px; border-radius:50%; border:2px solid rgba(43,42,36,.18);
+    border-top-color:var(--copper); animation:spin .7s linear infinite; display:inline-block;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .progress-track{ height:5px; background:rgba(255,255,255,.08); border-radius:4px; overflow:hidden; margin-top:6px;}
+  .progress-fill{ height:100%; background:var(--copper); width:0%; transition:width .3s; }
+  .progress-text{ font-size:11px; color:var(--cream-dim); margin-top:5px;}
+
+  .error-box{ background:rgba(181,83,63,.15); border:1px solid rgba(181,83,63,.4); color:#F0C9C0;
+    padding:10px 12px; border-radius:var(--r-sm); font-size:12.5px; margin-top:8px; }
+
+  ::-webkit-scrollbar{ width:9px; }
+  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:5px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  .canvas-wrap::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); }
+
+  .action-stack{ display:flex; flex-direction:column; gap:8px; }
+  .mini-actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .btn-soft{ background:rgba(127,174,142,.16); color:#EAF2DD; border:1px solid rgba(127,174,142,.32); }
+  .btn-soft:hover{ background:rgba(127,174,142,.24); }
+  .dept-entry{ display:flex; flex-direction:column; gap:8px; }
+  .dept-entry-copy{ color:#DDD6BE; font-size:12px; line-height:1.45; }
+  .dept-canvas{ display:none; }
+  .dept-canvas.open{ display:flex; }
+  .dept-paper{ width:min(1120px, 94%); }
+  .dept-paper .school-head{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:26px; font-family:'Times New Roman',serif; font-size:13px; text-align:center; margin-bottom:20px; align-items:start; }
+  .dept-paper .school-head>div{ min-width:0; padding:0 10px; }
+  .dept-paper .school-head div:first-child{ border-right:0; }
+  .dept-paper .signature-block{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:42px; margin-top:42px; text-align:center; font-family:'Times New Roman',serif; page-break-inside:avoid; }
+  .dept-paper .signature-block>div{ min-width:0; padding:0 12px; }
+  .dept-paper .signature-space{ height:86px; }
+  .dept-title{ text-align:center; font-family:'Times New Roman',serif; font-size:17px; font-weight:700; margin:4px 0; }
+  .dept-subtitle{ text-align:center; font-family:'Times New Roman',serif; font-size:15px; font-weight:700; margin:4px 0 20px; }
+  .dept-table{ width:100%; border-collapse:collapse; margin:8px 0 18px; font-family:'Inter',sans-serif; font-size:11.5px; line-height:1.38; }
+  .dept-table th,.dept-table td{ border:1px solid #AFA58E; padding:7px; vertical-align:top; }
+  .dept-table th{ background:#EFE4C9; color:#3B3527; text-align:center; font-weight:700; }
+  .dept-table td{ min-height:28px; }
+  .dept-table td[contenteditable="true"]:focus,.dept-paper [contenteditable="true"]:focus{ outline:2px solid rgba(201,123,61,.45); background:#fffdf7; }
+  .dept-table .center{ text-align:center; vertical-align:middle; }
+  .dept-tools{ display:flex; gap:8px; margin-bottom:14px; font-family:'Inter',sans-serif; }
+  .dept-tools .btn{ padding:8px 11px; font-size:12px; }
+  .dept-schedule{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:0 0 14px; font-family:'Inter',sans-serif; }
+  .dept-schedule label{ display:flex; flex-direction:column; gap:4px; font-size:11px; font-weight:600; color:var(--ink-muted); }
+  .dept-schedule input{ color:var(--ink); background:#fff; border:1px solid var(--paper-edge); padding:7px 8px; font-size:12px; }
+  .btn-danger-lite{ background:rgba(181,83,63,.14); color:#F4D6CF; border:1px solid rgba(181,83,63,.32); }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:6px; margin-top:6px;
+    color:var(--cream-dim); font-size:11px; line-height:1.35;
+  }
+  .status-dot{ width:7px; height:7px; border-radius:50%; background:var(--sage); box-shadow:0 0 0 3px rgba(127,174,142,.12); }
+  .paper-tools{
+    display:flex; justify-content:flex-end; gap:8px; margin:-12px 0 18px;
+    font-family:'Inter',sans-serif;
+  }
+  .paper-tools .chip{
+    border:1px solid var(--paper-edge); background:#fff8e9; color:var(--ink-muted);
+    border-radius:999px; padding:5px 9px; font-size:11.5px;
+  }
+  .section-body[contenteditable="true"]:focus{
+    box-shadow:0 0 0 2px rgba(201,123,61,.22);
+    background:rgba(255,255,255,.35);
+    border-radius:4px;
+  }
+  .toast{
+    position:fixed; right:22px; bottom:22px; background:#13241f; color:var(--cream);
+    border:1px solid rgba(255,255,255,.16); box-shadow:0 14px 40px rgba(0,0,0,.35);
+    border-radius:8px; padding:11px 13px; font-size:13px; z-index:20;
+    opacity:0; transform:translateY(8px); pointer-events:none; transition:.18s ease;
+  }
+  .toast.show{ opacity:1; transform:translateY(0); }
+
+
+  .khbd-table{
+    width:100%; border-collapse:collapse; margin:8px 0 14px;
+    font-family:'Inter',sans-serif; font-size:12.5px; line-height:1.45;
+  }
+  .khbd-table th{
+    background:#EFE4C9; color:#3B3527; border:1px solid #CDBF9E;
+    padding:8px 9px; text-align:left; vertical-align:middle; font-weight:700;
+  }
+  .khbd-table td{
+    border:1px solid #D8CCAD; padding:9px 10px; vertical-align:top; background:rgba(255,255,255,.24);
+  }
+  .khbd-table td:nth-child(3){ width:18%; font-family:'JetBrains Mono',monospace; font-size:11.2px; color:#4E654E; }
+  .khbd-table td:nth-child(2){ width:28%; }
+  .nls-badge{
+    display:inline-flex; align-items:center; border:1px solid #CDBF9E; background:#FFF8E9;
+    border-radius:999px; padding:2px 7px; margin:2px 4px 2px 0;
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:#486246;
+  }
+
+  /* Refined operational workspace */
+  :root{
+    --teal-1:#123631; --teal-2:#174941; --teal-3:#215a50;
+    --cream:#F4F7F2; --cream-dim:#B7C9BE; --copper:#E2A247; --copper-light:#F3C36B;
+    --sage:#8ED1AF; --paper:#FFFFFF; --paper-edge:#D9E3DC; --ink:#20332D; --ink-muted:#687A71;
+    --r-sm:6px; --r-md:8px; --r-lg:8px;
+  }
+  body{ background:#E7EEEA; }
+  .app{ grid-template-columns:368px minmax(0,1fr); }
+  .sidebar{
+    background:#123631; padding:24px 22px 26px; gap:14px; border-right:0;
+    box-shadow:10px 0 30px rgba(21,48,40,.10);
+  }
+  .brand{ padding:0 2px 12px; border-bottom:1px solid rgba(255,255,255,.13); margin-bottom:2px; }
+  .brand-tile{ width:40px; height:40px; background:#E2A247; color:#18332C; border-radius:8px; box-shadow:none; font-size:16px; }
+  .brand-text h1{ font-size:19px; letter-spacing:0; }
+  .brand-text p{ font-size:10.5px; line-height:1.4; margin-top:3px; letter-spacing:.03em; }
+  .field{ gap:5px; }
+  .sidebar-section-title{
+    display:flex; align-items:center; gap:8px; margin:18px 0 9px;
+    color:#AFC9BF; font-size:10px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .sidebar-section-title::after{ content:""; height:1px; flex:1; background:rgba(255,255,255,.16); }
+  .sidebar-section-title:first-of-type{ margin-top:14px; }
+  .field label,.nls-label{ font-size:10px; letter-spacing:.08em; }
+  select,input[type=text],input[type=number],textarea{
+    background:rgba(255,255,255,.075); border-color:rgba(255,255,255,.16); color:#F7FBF7;
+    padding:10px 11px; font-size:13px; min-height:40px;
+  }
+  select:hover,input:hover,textarea:hover{ border-color:rgba(243,195,107,.58); }
+  .yccd-box{ background:rgba(255,255,255,.055); border-color:rgba(255,255,255,.12); border-radius:8px; padding:12px; }
+  .yccd-box textarea{ min-height:76px; }
+  .nls-tiles{ gap:6px; }
+  .nls-tile{ width:42px; height:42px; background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.15); }
+  .nls-meta{ font-size:11.5px; line-height:1.5; color:#D8E6DC; }
+  .divider{ background:rgba(255,255,255,.14); margin:8px 0; }
+  .btn{ min-height:40px; padding:10px 13px; font-size:12.5px; border-radius:6px; }
+  .btn-primary{ background:#E2A247; color:#17332B; box-shadow:0 5px 14px rgba(0,0,0,.16); }
+  .btn-primary:hover{ filter:brightness(1.04); }
+  .btn-soft{ background:rgba(142,209,175,.14); border-color:rgba(142,209,175,.36); }
+  .btn-ghost{ background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.15); }
+  .dept-entry{ border-left:3px solid #E2A247; padding:2px 0 2px 11px; }
+  .dept-entry-copy{ font-size:11.5px; color:#D4E1D8; }
+  .action-stack{ gap:7px; }
+  .status-pill{ background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.08); padding:7px 8px; border-radius:6px; margin-top:2px; }
+  .sidebar-foot{ border-top:1px solid rgba(255,255,255,.12); margin-top:4px; padding-top:13px; }
+
+  .main{ background:#E7EEEA; }
+  .topbar{
+    background:#FFFFFF; border-bottom:1px solid #D7E1DB; padding:16px 30px;
+    box-shadow:0 1px 0 rgba(27,62,49,.03);
+  }
+  .topbar h2{ color:#173C32; font-family:'Inter',sans-serif; font-size:18px; font-weight:700; }
+  .topbar .sub{ color:#6C7C73; font-size:12px; }
+  .top-actions{ gap:7px; }
+  .top-actions .btn{ color:#315247; background:#F6F9F7; border:1px solid #D9E4DD; min-height:36px; }
+  .top-actions .btn:hover{ background:#ECF3EE; border-color:#B7CEBF; }
+  .canvas-wrap{ padding:30px 28px 58px; }
+  .paper{
+    width:min(880px,100%); border:1px solid #DCE6DF; border-radius:8px; box-shadow:0 18px 46px rgba(31,65,51,.12);
+    padding:52px 60px 70px;
+  }
+  .paper h3.title{ color:#173C32; font-size:20px; }
+  .paper .school-line{ font-size:12px; margin-bottom:25px; }
+  .meta-grid{ background:#F7FAF8; border:1px solid #DFE9E2; border-radius:6px; padding:11px 13px; margin-bottom:28px; gap:6px 24px; }
+  .sec-h{ color:#17473A; border-bottom:1px solid #DCE8E0; padding-bottom:7px; margin-top:30px; }
+  .sub-h{ color:#315A4A; margin-top:20px; }
+  .section-body{ font-size:13px; line-height:1.7; }
+  .paper-tools{ margin:-18px 0 20px; }
+  .paper-tools .chip{ border-radius:5px; background:#F5F8F4; }
+  .khbd-table{ box-shadow:0 1px 0 rgba(22,57,45,.05); }
+  .khbd-table th{ background:#EAF3EC; border-color:#C9DACE; color:#244C3D; }
+  .khbd-table td{ border-color:#D5E1D8; background:#FFFFFF; }
+  .nls-badge{ border-color:#BFD5C5; background:#F2F8F3; color:#326147; }
+  .placeholder-state{ color:#708278; }
+  .placeholder-state .big{ color:#234D3E; font-size:22px; }
+  .dept-paper{ width:min(1160px,100%); }
+  .dept-table th{ background:#EAF3EC; border-color:#BFCFC4; color:#244C3D; }
+  .dept-table td{ border-color:#CFDDD3; }
+  @media (max-width: 720px){
+    .khbd-table,.dept-table{ display:block; overflow-x:auto; white-space:normal; }
+    .khbd-table th,.khbd-table td{ min-width:150px; }
+  }
+
+  @media (max-width: 920px){
+    body{ height:auto; min-height:100vh; overflow:auto; }
+    .app{ grid-template-columns:1fr; height:auto; min-height:100vh; }
+    .sidebar{ position:relative; max-height:none; border-right:none; border-bottom:1px solid #0c1815; }
+    .main{ height:auto; min-height:70vh; }
+    .topbar{ position:sticky; top:0; z-index:5; background:var(--teal-1); padding:12px 16px; gap:12px; align-items:flex-start; }
+    .top-actions{ flex-wrap:wrap; justify-content:flex-end; }
+    .canvas-wrap{ padding:18px 0 36px; }
+    .paper{ width:94%; padding:30px 24px 42px; }
+    .meta-grid{ grid-template-columns:1fr; }
+  }
+  @media (max-width: 560px){
+    .row2, .mini-actions{ grid-template-columns:1fr; }
+    .topbar{ flex-direction:column; }
+    .top-actions{ width:100%; }
+    .top-actions .btn{ flex:1; min-width:120px; }
+    .paper{ width:100%; border-left:none; border-right:none; border-radius:0; padding:26px 18px 38px; }
+    .dept-schedule{ grid-template-columns:1fr; }
+  }
+
+  @media print{
+    body{ background:#fff; height:auto; overflow:visible; }
+    .app{ display:block; height:auto; }
+    .sidebar,.topbar,.paper-tools,.toast{ display:none !important; }
+    .main,.canvas-wrap{ display:block; height:auto; background:#fff; padding:0; overflow:visible; }
+    .paper{
+      width:auto; min-height:0; box-shadow:none; border:none; border-radius:0;
+      padding:0; background:#fff; color:#111;
+    }
+    .section-body{ font-size:12pt; line-height:1.45; }
+    body.dept-mode .canvas-wrap:not(#deptCanvas), body:not(.dept-mode) #deptCanvas{ display:none !important; }
+    .dept-paper{ width:auto; padding:0; }
+    .dept-table{ font-size:9pt; }
+  }
+
+</style>
+</head>
+<body class="access-locked">
+
+<div class="access-gate" id="accessGate">
+  <div class="access-card">
+    <h1>KHBD Hóa học</h1>
+    <p>Nhập mật mã được cấp để sử dụng ứng dụng. Mỗi mã nên cấp riêng cho một giáo viên.</p>
+    <label for="accessCodeInput">Mật mã truy cập</label>
+    <input id="accessCodeInput" type="password" autocomplete="one-time-code" placeholder="VD: KHBD-R7M4-Q2XA">
+    <div class="access-actions">
+      <button class="btn btn-primary" id="btnUnlockApp" type="button">Vào ứng dụng</button>
+    </div>
+    <div class="access-error" id="accessError"></div>
+    <div class="access-note">Lưu ý: bản web tĩnh chỉ khóa trên trình duyệt. Muốn một mã chỉ dùng được đúng một người trên toàn Internet cần có máy chủ xác thực.</div>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-tile">10</div>
+      <div class="brand-text">
+        <h1>Soạn KHBD Hoá 10</h1>
+        <p>Tích hợp năng lực số · TT 02/2025 · CV 3456/BGDĐT-GDPT</p>
+      </div>
+    </div>
+
+    <div class="sidebar-section-title">Nội dung bài học</div>
+
+    <div class="field">
+      <label>Khối lớp</label>
+      <select id="selGrade">
+        <option value="10">Hóa học 10</option>
+        <option value="11">Hóa học 11</option>
+        <option value="12">Hóa học 12</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Bộ tài liệu</label>
+      <select id="selSource">
+        <option value="sgk">SGK Hoá học 10 (7 chương, 23 bài)</option>
+        <option value="cd">Chuyên đề học tập Hoá học 10</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Chương / Chuyên đề</label>
+      <select id="selChuong"></select>
+    </div>
+
+    <div class="field">
+      <label>Bài học</label>
+      <select id="selBai"></select>
+    </div>
+
+    <div class="yccd-box">
+      <div class="field">
+        <label>Yêu cầu cần đạt (có thể sửa)</label>
+        <textarea id="txtYccd" rows="3"></textarea>
+      </div>
+    </div>
+
+    <div>
+      <div class="nls-label">Năng lực số gợi ý tích hợp</div>
+      <div class="nls-tiles" id="nlsTiles"></div>
+      <div class="nls-meta" id="nlsMeta"></div>
+      <button type="button" class="nls-indicators-toggle" id="btnToggleInd">
+        <span>📋 Yêu cầu cần đạt (mức Nâng cao 1 — lớp 10-12)</span><span id="indToggleIcon">▾</span>
+      </button>
+      <div class="nls-indicators" id="nlsIndicators"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sidebar-section-title">Lớp học và tổ chức</div>
+
+    <div class="row2">
+      <div class="field"><label id="lblClass">Lớp dạy</label><input type="text" id="inpLop" placeholder="10A1"></div>
+      <div class="field"><label>Số tiết</label><input type="text" id="inpTiet" placeholder="1"></div>
+    </div>
+    <div class="field"><label>Ngày soạn</label><input type="text" id="inpNgay" placeholder="VD: 12/10/2026"></div>
+    <div class="field">
+      <label>Ghi chú thêm cho GV (không bắt buộc)</label>
+      <textarea id="inpNote" rows="2" placeholder="VD: lớp khá, nhấn mạnh phần thực hành; trường có phòng máy 1 buổi/tuần..."></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label>Tên giáo viên / nhóm soạn</label>
+      <input type="text" id="inpTeacher" placeholder="VD: Nguyễn Văn A / Nhóm Hóa 10">
+    </div>
+    <div class="field">
+      <label>Đặc điểm lớp học</label>
+      <select id="selClassProfile">
+        <option value="mixed">Phân hóa: có đủ mức độ HS</option>
+        <option value="strong">Lớp khá/giỏi, tăng thử thách</option>
+        <option value="support">Lớp cần hỗ trợ, nhiệm vụ vừa sức</option>
+        <option value="practice">Ưu tiên thực hành/thí nghiệm</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Điều kiện tổ chức</label>
+      <select id="selFacilities">
+        <option value="standard">Lớp học thường + máy chiếu</option>
+        <option value="lab">Có phòng thí nghiệm</option>
+        <option value="internet">Có Internet/thiết bị cá nhân</option>
+        <option value="limited">Thiết bị hạn chế</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Mức độ khác biệt giữa các giáo án</label>
+      <select id="selVariation">
+        <option value="medium">Vừa: đổi hoạt động, câu hỏi, sản phẩm</option>
+        <option value="light">Nhẹ: giữ khung, đổi tình huống/câu chữ</option>
+        <option value="strong">Mạnh: đổi kĩ thuật dạy học và sản phẩm</option>
+      </select>
+    </div>
+    <div class="divider"></div>
+    <div class="sidebar-section-title">Kế hoạch của Tổ</div>
+    <div class="dept-entry">
+      <div class="nls-label">Hồ sơ riêng của Tổ chuyên môn</div>
+      <div class="dept-entry-copy">Lập kế hoạch dạy học toàn năm cho tất cả các bài, thiết bị, kiểm tra đánh giá và buổi 2.</div>
+      <button type="button" class="btn btn-soft" id="btnOpenDept">Mở kế hoạch Tổ chuyên môn</button>
+    </div>
+
+    <div class="sidebar-section-title">Soạn và lưu</div>
+
+    <div class="field">
+      <label>API Key (chỉ cần khi mở file ngoài claude.ai)</label>
+      <input type="password" id="inpApiKey" placeholder="sk-ant-...">
+    </div>
+
+    <div class="action-stack">
+      <button class="btn btn-primary" id="btnGenerate">⚗ Tạo kế hoạch bài dạy bằng AI</button>
+      <button class="btn btn-soft" id="btnGenerateVariant">Tạo phiên bản khác</button>
+      <button class="btn btn-soft" id="btnGenerateSample">Tạo bản mẫu không cần API</button>
+      <div class="mini-actions">
+        <button class="btn btn-ghost" id="btnSaveDraft">Lưu nháp</button>
+        <button class="btn btn-ghost" id="btnLoadDraft">Khôi phục</button>
+      </div>
+      <div class="status-pill"><span class="status-dot"></span><span id="draftStatus">Tự lưu khi bạn chỉnh sửa bản soạn.</span></div>
+    </div>
+    <div id="progressWrap" style="display:none;">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText"></div>
+    </div>
+    <div id="errorWrap"></div>
+
+    <div class="sidebar-foot">
+      Nội dung do AI soạn dựa trên yêu cầu cần đạt &amp; chỉ báo NLS mức Nâng cao 1 (Phụ lục kèm Công văn 3456/BGDĐT-GDPT, 27/6/2025, cụ thể hoá Khung NLS theo TT 02/2025/TT-BGDĐT) — vui lòng rà soát, chỉnh sửa trực tiếp trên bản soạn trước khi dùng. Không sao chép nguyên văn SGK.
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="topTitle">Chưa chọn bài học</h2>
+        <div class="sub" id="topSub">Chọn bài ở thanh bên rồi bấm "Tạo kế hoạch bài dạy"</div>
+      </div>
+      <div class="top-actions">
+        <button class="btn btn-ghost" id="btnBackLesson" style="display:none;">KHBD giáo viên</button>
+        <button class="btn btn-ghost" id="btnCopy">Sao chép</button>
+        <button class="btn btn-ghost" id="btnPrint">In/PDF</button>
+        <button class="btn btn-ghost" id="btnDownload">Xuất Word (.doc)</button>
+        <button class="btn btn-ghost" id="btnDownloadPdf">Xuất PDF ký tên</button>
+        <button class="btn btn-ghost" id="btnSaveDept" style="display:none;">Lưu kế hoạch Tổ</button>
+        <button class="btn btn-ghost" id="btnDownloadDept" style="display:none;">Xuất Word (.doc)</button>
+        <button class="btn btn-ghost" id="btnDownloadDeptPdf" style="display:none;">Xuất PDF ký tên</button>
+      </div>
+    </div>
+
+    <div class="canvas-wrap">
+      <div class="paper" id="paper">
+        <div class="placeholder-state">
+          <div class="big">📄 Bản soạn của bạn sẽ hiện ở đây</div>
+          <div>Chọn chương và bài học ở thanh bên trái, kiểm tra phần "Yêu cầu cần đạt" và gợi ý năng lực số, sau đó bấm <b style="color:var(--copper-light)">Tạo kế hoạch bài dạy</b>.</div>
+        </div>
+      </div>
+    </div>
+    <div class="canvas-wrap dept-canvas" id="deptCanvas">
+      <div class="paper dept-paper" id="deptPaper">
+        <div class="dept-tools">
+          <button class="btn btn-soft" id="btnGenerateDept">Tạo khung theo mẫu</button>
+        </div>
+        <div class="dept-schedule">
+          <label>Tổng số tuần năm học<input type="number" id="inpSchoolWeeks" value="38" min="35" max="45"></label>
+          <label>Số tiết môn/tuần<input type="number" id="inpPeriodsPerWeek" value="2" min="1" max="4"></label>
+          <label>Tuần nghỉ Tết<input type="number" id="inpTetWeek" value="22" min="1" max="45"></label>
+        </div>
+        <div class="school-head">
+          <div contenteditable="true" id="deptSchool">TRƯỜNG: ........................................<br>TỔ: HÓA HỌC</div>
+          <div><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b><br>Độc lập - Tự do - Hạnh phúc</div>
+        </div>
+        <div class="dept-title">KẾ HOẠCH DẠY HỌC CỦA TỔ CHUYÊN MÔN</div>
+        <div class="dept-subtitle" contenteditable="true" id="deptTitle">HOẠT ĐỘNG GIÁO DỤC HÓA HỌC KHỐI LỚP 10<br>(Năm học 2026 - 2027)</div>
+
+        <div class="sec-h roman">I. ĐẶC ĐIỂM TÌNH HÌNH</div>
+        <div class="section-body" contenteditable="true" id="deptSituation">1. Số lớp: .... ; Số học sinh: ....
+2. Tình hình đội ngũ: Số giáo viên: .... ; Trình độ đào tạo: ........................................
+3. Thiết bị dạy học: Thống kê thiết bị có thể sử dụng để tổ chức dạy học môn Hóa học.
+4. Phòng học bộ môn/phòng thí nghiệm/phòng đa năng: Thống kê các phòng, không gian có thể sử dụng.</div>
+
+        <div class="sub-h">1. Thiết bị dạy học</div>
+        <table class="dept-table" id="deptDevices"><thead><tr><th>STT</th><th>Thiết bị dạy học</th><th>Số lượng</th><th>Các bài thí nghiệm/thực hành</th><th>Ghi chú</th></tr></thead><tbody></tbody></table>
+        <div class="sub-h">2. Phòng học bộ môn/phòng thí nghiệm/phòng đa năng</div>
+        <table class="dept-table" id="deptRooms"><thead><tr><th>STT</th><th>Tên phòng</th><th>Số lượng</th><th>Phạm vi và nội dung sử dụng</th><th>Ghi chú</th></tr></thead><tbody></tbody></table>
+
+        <div class="sec-h roman">II. KẾ HOẠCH DẠY HỌC</div>
+        <div class="sub-h">1. Phân phối chương trình</div>
+        <table class="dept-table" id="deptDistribution"><thead><tr><th>Tuần</th><th>Tiết</th><th>Bài học</th><th>Yêu cầu cần đạt</th><th>Năng lực số phát triển</th><th>Mã NLS</th></tr></thead><tbody></tbody></table>
+        <div class="sub-h">2. Chuyên đề lựa chọn (đối với cấp trung học phổ thông)</div>
+        <table class="dept-table" id="deptTopics"><thead><tr><th>STT</th><th>Chuyên đề</th><th>Số tiết</th><th>Yêu cầu cần đạt</th><th>Năng lực số phát triển</th><th>Mã NLS</th></tr></thead><tbody></tbody></table>
+        <div class="sub-h">3. Kiểm tra, đánh giá định kì</div>
+        <table class="dept-table" id="deptAssessments"><thead><tr><th>Bài kiểm tra, đánh giá</th><th>Thời gian</th><th>Thời điểm</th><th>Yêu cầu cần đạt</th><th>Hình thức</th></tr></thead><tbody></tbody></table>
+
+        <div class="sec-h roman">III. KẾ HOẠCH DẠY HỌC (BUỔI 2)</div>
+        <table class="dept-table" id="deptSecondSession"><thead><tr><th>Tuần</th><th>Nội dung luyện tập</th><th>Năng lực số</th></tr></thead><tbody></tbody></table>
+        <div class="sec-h roman">IV. CÁC NỘI DUNG KHÁC (NẾU CÓ)</div>
+        <div class="section-body" contenteditable="true" id="deptOther">1. Sinh hoạt tổ/nhóm chuyên môn: Sinh hoạt định kì; seminar chuyên môn; tham gia sinh hoạt theo cụm trường.
+2. Bồi dưỡng học sinh giỏi và phụ đạo học sinh cần hỗ trợ.
+3. Hướng dẫn học sinh tham gia nghiên cứu khoa học kĩ thuật; hoạt động trải nghiệm và STEM.</div>
+        <div class="signature-block"><div><b>DUYỆT CỦA BAN GIÁM HIỆU</b><div class="signature-space"></div><div>(Ký, ghi rõ họ tên)</div></div><div contenteditable="true">Thành phố Hồ Chí Minh, ngày ..... tháng ..... năm ........<br><b>TỔ TRƯỞNG BỘ MÔN</b><div class="signature-space"></div><div>(Ký, ghi rõ họ tên)</div></div></div>
+      </div>
+    </div>
+  </main>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const ACCESS_CODES = [
+  { code:"KHBD-R7M4-Q2XA", user:"GV 01" },
+  { code:"KHBD-Z9T6-L8NC", user:"GV 02" },
+  { code:"KHBD-P3W8-V5RY", user:"GV 03" },
+  { code:"KHBD-K6D2-N9UF", user:"GV 04" },
+  { code:"KHBD-X4H7-C3BQ", user:"GV 05" },
+  { code:"KHBD-M8A5-J2TV", user:"GV 06" },
+  { code:"KHBD-F2Q9-S6LE", user:"GV 07" },
+  { code:"KHBD-C7V3-W8PK", user:"GV 08" },
+  { code:"KHBD-L5N6-A4GX", user:"GV 09" },
+  { code:"KHBD-U9B2-R7MD", user:"GV 10" }
+];
+const ACCESS_SESSION_KEY = "khbd-access-session-v1";
+const ACCESS_DEVICE_KEY = "khbd-access-device-v1";
+const ACCESS_BINDINGS_KEY = "khbd-access-bindings-v1";
+
+function getAccessDeviceId(){
+  let id = localStorage.getItem(ACCESS_DEVICE_KEY);
+  if(!id){
+    id = "device-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem(ACCESS_DEVICE_KEY, id);
+  }
+  return id;
+}
+function normalizeAccessCode(value){
+  return String(value || "").trim().toUpperCase();
+}
+function unlockAppFor(code, user){
+  localStorage.setItem(ACCESS_SESSION_KEY, JSON.stringify({ code, user, unlockedAt:new Date().toISOString() }));
+  document.body.classList.remove("access-locked");
+}
+function initAccessGate(){
+  const saved = localStorage.getItem(ACCESS_SESSION_KEY);
+  if(saved){
+    try{
+      const session = JSON.parse(saved);
+      if(ACCESS_CODES.some(item => item.code === session.code)){
+        document.body.classList.remove("access-locked");
+        return;
+      }
+    }catch(e){}
+  }
+  const input = document.getElementById("accessCodeInput");
+  const button = document.getElementById("btnUnlockApp");
+  const error = document.getElementById("accessError");
+  const tryUnlock = () => {
+    const code = normalizeAccessCode(input.value);
+    const entry = ACCESS_CODES.find(item => item.code === code);
+    if(!entry){
+      error.textContent = "Mã không đúng. Vui lòng kiểm tra lại mật mã được cấp.";
+      input.focus();
+      return;
+    }
+    const deviceId = getAccessDeviceId();
+    const bindings = JSON.parse(localStorage.getItem(ACCESS_BINDINGS_KEY) || "{}");
+    if(bindings[code] && bindings[code] !== deviceId){
+      error.textContent = "Mã này đã được kích hoạt trên một thiết bị khác trong trình duyệt này.";
+      return;
+    }
+    bindings[code] = deviceId;
+    localStorage.setItem(ACCESS_BINDINGS_KEY, JSON.stringify(bindings));
+    unlockAppFor(code, entry.user);
+  };
+  button.addEventListener("click", tryUnlock);
+  input.addEventListener("keydown", event => {
+    if(event.key === "Enter") tryUnlock();
+  });
+  setTimeout(() => input.focus(), 100);
+}
+initAccessGate();
+
+/* ======================================================================
+   DỮ LIỆU: 23 bài SGK chính + 11 bài Chuyên đề học tập Hoá học 10
+   (chương trình KNTT) — kèm gợi ý tích hợp năng lực số theo TT 02/2025
+   ====================================================================== */
+const MIEN_INFO = {
+  I:   { ten:"Khai thác dữ liệu và thông tin", num:1 },
+  II:  { ten:"Giao tiếp và hợp tác trong môi trường số", num:2 },
+  III: { ten:"Sáng tạo nội dung số", num:3 },
+  IV:  { ten:"An toàn", num:4 },
+  V:   { ten:"Giải quyết vấn đề", num:5 },
+  VI:  { ten:"Ứng dụng trí tuệ nhân tạo", num:6 },
+};
+
+/* ----------------------------------------------------------------------
+   YÊU CẦU CẦN ĐẠT (CHỈ BÁO) CỦA TỪNG NĂNG LỰC THÀNH PHẦN — MỨC "NÂNG CAO 1"
+   (áp dụng cho lớp 10, 11, 12 theo bảng mức độ thành thạo, Phụ lục kèm theo
+   Công văn số 3456/BGDĐT-GDPT ngày 27/6/2025): học sinh xử lý "các nhiệm vụ
+   và vấn đề khác nhau", với mức tự chủ "khi tự mình và hướng dẫn người khác".
+   Nội dung dưới đây là PHẦN TỔNG HỢP, DIỄN GIẢI lại từ Phụ lục để dùng làm
+   ngữ cảnh cho việc soạn KHBD — GV nên đối chiếu lại văn bản gốc khi cần.
+   ---------------------------------------------------------------------- */
+const NLS_DESCRIPTORS = {
+  I: { items: [
+    { code:"1.1", ten:"Duyệt, tìm kiếm và lọc dữ liệu, thông tin và nội dung số",
+      yccd:[ "Đáp ứng được nhu cầu thông tin của bản thân và người khác.",
+             "Áp dụng kỹ thuật tìm kiếm phù hợp để thu thập dữ liệu, thông tin, nội dung trong môi trường số.",
+             "Hướng dẫn người khác cách truy cập, điều hướng giữa các nguồn dữ liệu, thông tin đó.",
+             "Tự đề xuất được chiến lược tìm kiếm cho tình huống mới." ] },
+    { code:"1.2", ten:"Đánh giá dữ liệu, thông tin và nội dung số",
+      yccd:[ "So sánh, phân tích và đánh giá độ tin cậy, độ chính xác của các nguồn dữ liệu khác nhau.",
+             "Đánh giá được độ tin cậy của dữ liệu, thông tin dù nguồn không tường minh, không theo cấu trúc quen thuộc.",
+             "Hướng dẫn người khác cách kiểm chứng nguồn thông tin." ] },
+    { code:"1.3", ten:"Quản lý dữ liệu, thông tin và nội dung số",
+      yccd:[ "Thao tác, sắp xếp, tổ chức dữ liệu, thông tin, nội dung số trong một môi trường có cấu trúc để dễ lưu trữ, truy xuất lâu dài.",
+             "Hướng dẫn người khác tổ chức, sắp xếp dữ liệu một cách có cấu trúc." ] },
+  ]},
+  II: { items: [
+    { code:"2.1", ten:"Tương tác thông qua các công nghệ số",
+      yccd:[ "Lựa chọn, sử dụng nhiều công nghệ/phương tiện giao tiếp số khác nhau phù hợp với từng bối cảnh cụ thể.",
+             "Chỉ cho người khác cách lựa chọn phương tiện giao tiếp số phù hợp nhất với một bối cảnh nhất định." ] },
+    { code:"2.2", ten:"Chia sẻ thông tin và nội dung qua công nghệ số",
+      yccd:[ "Chia sẻ dữ liệu, thông tin, nội dung số qua nhiều công cụ số phù hợp.",
+             "Đóng vai trò người trung gian, thực hành trích dẫn và ghi nguồn tham chiếu đúng cách.",
+             "Hướng dẫn người khác cách chia sẻ và trích dẫn nguồn thông tin." ] },
+    { code:"2.3", ten:"Sử dụng công nghệ số để thực hiện trách nhiệm công dân",
+      yccd:[ "Đề xuất, lựa chọn dịch vụ số công cộng/tư nhân phù hợp để tham gia vào xã hội.",
+             "Sử dụng công nghệ số phù hợp để tự trang bị kiến thức, kỹ năng và tham gia xã hội với tư cách công dân số." ] },
+    { code:"2.4", ten:"Hợp tác thông qua công nghệ số",
+      yccd:[ "Sử dụng công cụ, công nghệ số phù hợp để cùng xây dựng, đồng sáng tạo dữ liệu, tài liệu, kiến thức trong quá trình hợp tác.",
+             "Hướng dẫn người khác lựa chọn, điều chỉnh công cụ cộng tác phù hợp cho từng giai đoạn làm việc nhóm." ] },
+    { code:"2.5", ten:"Quy tắc ứng xử trên mạng",
+      yccd:[ "Áp dụng chuẩn mực hành vi, cách thức ứng xử phù hợp khi tương tác trong môi trường số.",
+             "Điều chỉnh chiến lược giao tiếp phù hợp với đối tượng cụ thể, có nhận thức về sự đa dạng văn hoá, thế hệ.",
+             "Hướng dẫn người khác ứng xử văn minh, an toàn trên không gian mạng." ] },
+    { code:"2.6", ten:"Quản lý danh tính số",
+      yccd:[ "Tạo, quản lý một hoặc nhiều danh tính số để bảo vệ danh tiếng của bản thân.",
+             "Hướng dẫn người khác bảo vệ danh tính số khi làm việc với dữ liệu qua nhiều công cụ, môi trường, dịch vụ số." ] },
+  ]},
+  III: { items: [
+    { code:"3.1", ten:"Phát triển nội dung số",
+      yccd:[ "Tạo, chỉnh sửa nội dung số ở các định dạng khác nhau để thể hiện bản thân qua phương tiện số.",
+             "Chỉ cho người khác những cách thể hiện bản thân thông qua việc tạo nội dung số." ] },
+    { code:"3.2", ten:"Tích hợp và tái lập nội dung số",
+      yccd:[ "Sửa đổi, tinh chỉnh, cải thiện, tích hợp thông tin/nội dung mới vào kiến thức, tài nguyên đã có để tạo nội dung mới, độc đáo, phù hợp mục tiêu.",
+             "Hướng dẫn người khác thực hiện việc tích hợp, tái lập nội dung số." ] },
+    { code:"3.3", ten:"Thực thi bản quyền và giấy phép",
+      yccd:[ "Áp dụng đúng quy định về bản quyền, giấy phép khi sử dụng, chia sẻ dữ liệu, thông tin, nội dung số.",
+             "Hướng dẫn người khác hiểu và tuân thủ quy định về bản quyền, giấy phép nội dung số." ] },
+    { code:"3.4", ten:"Lập trình",
+      yccd:[ "Tự xây dựng một chuỗi câu lệnh/hướng dẫn dễ hiểu cho hệ thống máy tính để giải quyết vấn đề hoặc thực hiện nhiệm vụ cụ thể.",
+             "Hướng dẫn người khác lập trình, xử lý lỗi trong các nhiệm vụ tương tự." ] },
+  ]},
+  IV: { items: [
+    { code:"4.1", ten:"Bảo vệ thiết bị",
+      yccd:[ "Áp dụng nhiều biện pháp khác nhau để bảo vệ thiết bị, nội dung số, có quan tâm đến mức độ tin cậy và quyền riêng tư.",
+             "Hướng dẫn người khác thiết lập biện pháp bảo vệ thiết bị, dữ liệu phù hợp với từng nhiệm vụ cụ thể." ] },
+    { code:"4.2", ten:"Bảo vệ dữ liệu cá nhân và quyền riêng tư",
+      yccd:[ "Lựa chọn, áp dụng biện pháp bảo vệ quyền riêng tư phù hợp với từng dịch vụ số sử dụng.",
+             "Sử dụng cách thức đặc thù để chia sẻ thông tin định danh cá nhân một cách an toàn.",
+             "Hướng dẫn người khác bảo vệ dữ liệu cá nhân, quyền riêng tư trong môi trường số." ] },
+    { code:"4.3", ten:"Bảo vệ sức khoẻ và an sinh số",
+      yccd:[ "Trình bày các cách khác nhau để tránh rủi ro, đe doạ đến sức khoẻ thể chất, tinh thần khi sử dụng công nghệ số.",
+             "Hướng dẫn người khác phòng tránh các nguy cơ (ví dụ: bắt nạt trên mạng, lệ thuộc thiết bị)." ] },
+    { code:"4.4", ten:"Bảo vệ môi trường",
+      yccd:[ "Trình bày, lựa chọn cách thức bảo vệ môi trường trước tác động của công nghệ số và việc sử dụng công nghệ số.",
+             "Hướng dẫn người khác sử dụng công nghệ số có ý thức bảo vệ môi trường." ] },
+  ]},
+  V: { items: [
+    { code:"5.1", ten:"Giải quyết các vấn đề kỹ thuật",
+      yccd:[ "Đánh giá các vấn đề kỹ thuật khi vận hành thiết bị, sử dụng môi trường số; áp dụng giải pháp phù hợp để xử lý.",
+             "Hướng dẫn người khác xử lý các vấn đề kỹ thuật tương tự." ] },
+    { code:"5.2", ten:"Xác định nhu cầu và giải pháp công nghệ",
+      yccd:[ "Đánh giá nhu cầu của bản thân; lựa chọn, sử dụng công cụ số/giải pháp công nghệ khả thi để đáp ứng nhu cầu.",
+             "Hướng dẫn người khác xác định nhu cầu và lựa chọn giải pháp công nghệ phù hợp." ] },
+    { code:"5.3", ten:"Sử dụng sáng tạo công nghệ số",
+      yccd:[ "Áp dụng công cụ, công nghệ số để tạo ra kiến thức mới, đổi mới quy trình hoặc sản phẩm.",
+             "Điều chỉnh công cụ, môi trường số theo nhu cầu cá nhân; hướng dẫn người khác làm tương tự." ] },
+    { code:"5.4", ten:"Xác định các vấn đề cần cải thiện về năng lực số",
+      yccd:[ "Tự đánh giá năng lực số của bản thân cần cải thiện, cập nhật ở khía cạnh nào.",
+             "Hỗ trợ, hướng dẫn người khác xác định nhu cầu phát triển NLS; tìm kiếm cơ hội phát triển bản thân, cập nhật công nghệ." ] },
+  ]},
+  VI: { items: [
+    { code:"6.1", ten:"Hiểu biết về trí tuệ nhân tạo",
+      yccd:[ "Phân tích cách AI ảnh hưởng đến cuộc sống hằng ngày và vai trò của AI trong các lĩnh vực khác nhau.",
+             "Giải thích cho người khác nguyên tắc hoạt động cơ bản và phạm vi ứng dụng của AI." ] },
+    { code:"6.2", ten:"Sử dụng trí tuệ nhân tạo",
+      yccd:[ "Áp dụng nguyên tắc cơ bản của AI để giải quyết vấn đề cụ thể trong học tập, cuộc sống.",
+             "Thực hiện thao tác trên công cụ AI, so sánh hiệu quả ứng dụng và hướng dẫn người khác sử dụng." ] },
+    { code:"6.3", ten:"Đánh giá trí tuệ nhân tạo",
+      yccd:[ "Đánh giá độ chính xác, tin cậy, hiệu quả của hệ thống AI khi giải quyết vấn đề cụ thể.",
+             "Nhận xét rủi ro về đạo đức, pháp lý khi sử dụng AI; hướng dẫn người khác sử dụng AI có trách nhiệm." ] },
+  ]},
+};
+
+const DATA = {
+  sgk: [
+    { chuong:"Chương 1. Cấu tạo nguyên tử", bai:"Bài 1. Thành phần của nguyên tử",
+      ycc:"Trình bày được thành phần của nguyên tử (vỏ và hạt nhân nguyên tử); nêu được khối lượng, điện tích của electron, proton, neutron. So sánh được khối lượng của electron với proton và neutron, kích thước của hạt nhân với kích thước nguyên tử.",
+      demuc:"I. Các loại hạt cấu tạo nên nguyên tử | II. Kích thước và khối lượng của nguyên tử (1. Kích thước, 2. Khối lượng) | III. Điện tích hạt nhân và số khối",
+      mien:["I","VI"], congcu:"Mô phỏng PhET (Rutherford Scattering, Build an Atom); trợ lí AI hỗ trợ giải thích thí nghiệm; nguồn tra cứu khoa học uy tín.",
+      hoatdong:"HS tra cứu ≥2 nguồn về các thí nghiệm phát hiện electron/proton/neutron, đối chiếu độ tin cậy; dùng mô phỏng kiểm chứng thí nghiệm Rutherford; dùng AI hỗ trợ diễn giải phần khó, tự kiểm chứng lại với SGK.",
+      sanpham:"Phiếu trích dẫn nguồn và bảng so sánh mô hình nguyên tử qua các thời kì." },
+    { chuong:"Chương 1. Cấu tạo nguyên tử", bai:"Bài 2. Nguyên tố hoá học",
+      ycc:"Trình bày được khái niệm về nguyên tố hoá học, số hiệu nguyên tử và kí hiệu nguyên tử. Phát biểu được khái niệm đồng vị, nguyên tử khối. Tính được nguyên tử khối trung bình (theo amu) dựa vào khối lượng nguyên tử và phần trăm số nguyên tử của các đồng vị theo phổ khối lượng được cung cấp.",
+      demuc:"I. Nguyên tố hoá học | II. Kí hiệu nguyên tử | III. Đồng vị | IV. Nguyên tử khối (1. Nguyên tử khối, 2. Nguyên tử khối trung bình)",
+      mien:["I","III"], congcu:"Cơ sở dữ liệu PubChem / ptable.com; Canva.",
+      hoatdong:"HS khai thác dữ liệu trực tuyến để tìm số đồng vị, tỉ lệ % phổ biến của nguyên tố được phân công; thiết kế infographic số trình bày kết quả.",
+      sanpham:"Infographic số về đồng vị của một nguyên tố." },
+    { chuong:"Chương 1. Cấu tạo nguyên tử", bai:"Bài 3. Cấu trúc lớp vỏ electron nguyên tử",
+      ycc:"Trình bày và so sánh được mô hình của E. Rutherford – N. Bohr với mô hình hiện đại mô tả sự chuyển động của electron trong nguyên tử. Nêu được khái niệm về orbital nguyên tử (AO), mô tả được hình dạng của AO (s, p), số lượng electron trong 1 AO. Trình bày được khái niệm lớp, phân lớp electron và mối quan hệ về số lượng phân lớp trong một lớp. Liên hệ được về số lượng AO trong một phân lớp, trong một lớp. Viết được cấu hình electron nguyên tử theo lớp, phân lớp electron và theo ô orbital khi biết số hiệu nguyên tử Z của 20 nguyên tố đầu tiên trong bảng tuần hoàn. Dựa vào đặc điểm cấu hình electron lớp ngoài cùng của nguyên tử dự đoán được tính chất hoá học cơ bản (kim loại hay phi kim) của nguyên tố tương ứng.",
+      demuc:"I. Chuyển động của electron trong nguyên tử (1. Hình dạng orbital nguyên tử, 2. Ô orbital) | II. Lớp và phân lớp electron (1. Lớp electron, 2. Phân lớp electron, 3. Số lượng orbital trong một phân lớp, trong một lớp) | III. Cấu hình electron của nguyên tử (1. Viết cấu hình electron của nguyên tử, 2. Biểu diễn cấu hình electron theo ô orbital, 3. Đặc điểm của lớp electron ngoài cùng)",
+      mien:["I","V"], congcu:"Mô phỏng PhET — Build an Atom.",
+      hoatdong:"HS dùng mô phỏng để dựng cấu hình electron của một số nguyên tử, đối chiếu với quy tắc; khi kết quả chưa khớp, xác định nguyên nhân và tự khắc phục.",
+      sanpham:"Ảnh chụp cấu hình electron đã dựng kèm giải thích." },
+    { chuong:"Chương 1. Cấu tạo nguyên tử", bai:"Bài 4. Ôn tập chương 1",
+      ycc:"Hệ thống hoá và vận dụng kiến thức về thành phần nguyên tử, nguyên tố hoá học, cấu trúc lớp vỏ electron.",
+      demuc:"I. Hệ thống hoá kiến thức | II. Luyện tập",
+      mien:["III"], congcu:"Kahoot!/Quizizz; công cụ sơ đồ tư duy số (Canva).",
+      hoatdong:"HS ôn tập qua trò chơi trắc nghiệm trực tuyến; theo nhóm thiết kế sơ đồ tư duy số tổng kết chương.",
+      sanpham:"Sơ đồ tư duy số của nhóm." },
+    { chuong:"Chương 2. Bảng tuần hoàn các nguyên tố hoá học và định luật tuần hoàn", bai:"Bài 5. Cấu tạo của bảng tuần hoàn các nguyên tố hoá học",
+      ycc:"Nêu được lịch sử phát minh định luật tuần hoàn và bảng tuần hoàn các nguyên tố hoá học. Mô tả được cấu tạo của bảng tuần hoàn các nguyên tố hoá học và nêu được các khái niệm liên quan (ô, chu kì, nhóm). Nêu được nguyên tắc sắp xếp của bảng tuần hoàn các nguyên tố hoá học (dựa theo cấu hình electron). Phân loại được nguyên tố (dựa theo cấu hình electron: nguyên tố s, p, d, f; dựa theo tính chất hoá học: kim loại, phi kim, khí hiếm).",
+      demuc:"I. Lịch sử phát minh bảng tuần hoàn các nguyên tố hoá học | II. Nguyên tắc sắp xếp các nguyên tố trong bảng tuần hoàn | III. Cấu tạo của bảng tuần hoàn các nguyên tố hoá học (1. Ô nguyên tố, 2. Chu kì, 3. Nhóm nguyên tố, 4. Phân loại nguyên tố: a) Theo cấu hình electron, b) Theo tính chất hoá học)",
+      mien:["I"], congcu:"Bảng tuần hoàn tương tác trực tuyến (ptable.com).",
+      hoatdong:"HS khai thác bảng tuần hoàn tương tác để xác định vị trí, cấu hình electron của nguyên tố theo yêu cầu, ghi lại quy trình tra cứu.",
+      sanpham:"Phiếu tra cứu vị trí nguyên tố." },
+    { chuong:"Chương 2. Bảng tuần hoàn các nguyên tố hoá học và định luật tuần hoàn", bai:"Bài 6. Xu hướng biến đổi một số tính chất của nguyên tử các nguyên tố trong một chu kì và trong một nhóm",
+      ycc:"Giải thích được xu hướng biến đổi bán kính nguyên tử trong một chu kì, trong một nhóm (nhóm A) (dựa theo lực hút tĩnh điện của hạt nhân với electron ngoài cùng và dựa theo số lớp electron tăng trong một nhóm theo chiều từ trên xuống dưới). Nhận xét và giải thích được xu hướng biến đổi độ âm điện và tính kim loại, phi kim của nguyên tử các nguyên tố trong một chu kì, trong một nhóm (nhóm A).",
+      demuc:"I. Cấu hình electron nguyên tử của các nguyên tố nhóm A | II. Bán kính nguyên tử | III. Độ âm điện | IV. Tính kim loại và tính phi kim (1. Khái niệm, 2. Sự biến đổi tính kim loại, tính phi kim — có hoạt động thí nghiệm so sánh Na/Mg với nước, Cl2/I2 với KI)",
+      mien:["I","V"], congcu:"Excel/Google Sheets để vẽ biểu đồ.",
+      hoatdong:"HS nhập bảng số liệu bán kính nguyên tử, độ âm điện vào Sheets, vẽ biểu đồ để trực quan hoá và rút ra quy luật biến đổi.",
+      sanpham:"Biểu đồ minh hoạ xu hướng biến đổi tính chất." },
+    { chuong:"Chương 2. Bảng tuần hoàn các nguyên tố hoá học và định luật tuần hoàn", bai:"Bài 7. Xu hướng biến đổi thành phần và một số tính chất của hợp chất trong một chu kì",
+      ycc:"Nhận xét được xu hướng biến đổi thành phần và tính acid – base của các oxide và hydroxide theo chu kì. Viết được phương trình hoá học minh hoạ.",
+      demuc:"I. Thành phần của các oxide và hydroxide | II. Tính chất của oxide và hydroxide (1. Phản ứng của oxide với nước — hoạt động TN, 2. Phản ứng của muối với dung dịch acid — hoạt động TN)",
+      mien:["I","III"], congcu:"ChemSketch (vẽ công thức Lewis/cấu tạo).",
+      hoatdong:"HS dùng phần mềm vẽ cấu trúc để biểu diễn công thức oxide/hydroxide của các nguyên tố trong một chu kì, lập bảng so sánh tính acid – base.",
+      sanpham:"Bảng công thức cấu tạo oxide/hydroxide đã vẽ bằng phần mềm." },
+    { chuong:"Chương 2. Bảng tuần hoàn các nguyên tố hoá học và định luật tuần hoàn", bai:"Bài 8. Định luật tuần hoàn. Ý nghĩa của bảng tuần hoàn các nguyên tố hoá học",
+      ycc:"Phát biểu được định luật tuần hoàn. Trình bày được ý nghĩa của bảng tuần hoàn các nguyên tố hoá học: mối liên hệ giữa vị trí (trong bảng tuần hoàn các nguyên tố hoá học) với tính chất và ngược lại.",
+      demuc:"I. Định luật tuần hoàn | II. Ý nghĩa của bảng tuần hoàn các nguyên tố hoá học",
+      mien:["I","VI"], congcu:"Trợ lí AI; nguồn tra cứu khoa học.",
+      hoatdong:"HS đặt câu hỏi cho AI về ứng dụng thực tế của định luật tuần hoàn, sau đó kiểm chứng câu trả lời bằng SGK/nguồn uy tín, chỉ ra điểm đúng/sai.",
+      sanpham:"Phiếu đối chiếu \"AI trả lời – Kiểm chứng\"." },
+    { chuong:"Chương 2. Bảng tuần hoàn các nguyên tố hoá học và định luật tuần hoàn", bai:"Bài 9. Ôn tập chương 2",
+      ycc:"Hệ thống hoá kiến thức về bảng tuần hoàn và định luật tuần hoàn.",
+      demuc:"I. Hệ thống hoá kiến thức | II. Luyện tập",
+      mien:["III"], congcu:"PowerPoint/Canva.",
+      hoatdong:"Nhóm HS thiết kế bài trình chiếu số tổng kết chương và thuyết trình trước lớp.",
+      sanpham:"Bài trình chiếu tổng kết chương." },
+    { chuong:"Chương 3. Liên kết hoá học", bai:"Bài 10. Quy tắc octet",
+      ycc:"Trình bày và vận dụng được quy tắc octet trong quá trình hình thành liên kết hoá học cho các nguyên tố nhóm A.",
+      demuc:"I. Khái niệm liên kết hoá học | II. Quy tắc octet",
+      mien:["III"], congcu:"ChemSketch (công thức electron, công thức Lewis).",
+      hoatdong:"HS dùng phần mềm để vẽ công thức electron/Lewis minh hoạ quy tắc octet cho một số phân tử đơn giản.",
+      sanpham:"File/ảnh công thức Lewis đã vẽ." },
+    { chuong:"Chương 3. Liên kết hoá học", bai:"Bài 11. Liên kết ion",
+      ycc:"Trình bày được khái niệm và sự hình thành liên kết ion (nêu một số ví dụ điển hình tuân theo quy tắc octet). Nêu được cấu tạo tinh thể NaCl. Giải thích được vì sao các hợp chất ion thường ở trạng thái rắn trong điều kiện thường (dạng tinh thể ion). Lắp được mô hình tinh thể NaCl (theo mô hình có sẵn).",
+      demuc:"I. Sự tạo thành ion | II. Sự tạo thành liên kết ion | III. Tinh thể ion (1. Cấu trúc của tinh thể ion — hoạt động lắp mô hình NaCl, 2. Độ bền và tính chất của hợp chất ion — hoạt động thử tính dẫn điện)",
+      mien:["I","V"], congcu:"Mô phỏng PhET — Ionic Bonds.",
+      hoatdong:"HS dùng mô phỏng để quan sát sự hình thành liên kết ion, lí giải các trường hợp mô phỏng không tạo được hợp chất bền (nguyên nhân hoá trị/điện tích).",
+      sanpham:"Ghi chú quan sát kèm hình ảnh mô phỏng." },
+    { chuong:"Chương 3. Liên kết hoá học", bai:"Bài 12. Liên kết cộng hoá trị",
+      ycc:"Trình bày được khái niệm và lấy được ví dụ về liên kết cộng hoá trị (liên kết đơn, đôi, ba) khi áp dụng quy tắc octet. Viết được công thức Lewis của một số chất đơn giản. Trình bày được khái niệm về liên kết cho – nhận. Phân biệt được các loại liên kết (liên kết cộng hoá trị không phân cực, phân cực, liên kết ion) dựa theo độ âm điện. Giải thích được sự hình thành liên kết σ và liên kết π qua sự xen phủ AO. Trình bày được khái niệm năng lượng liên kết (cộng hoá trị).",
+      demuc:"I. Sự tạo thành liên kết cộng hoá trị (1. Liên kết đơn, 2. Liên kết đôi, 3. Liên kết ba — có hoạt động lắp ráp mô hình CH4, C2H4, C2H2, C2H5OH, CH3COOH) | II. Độ âm điện và liên kết hoá học | III. Mô tả liên kết cộng hoá trị bằng sự xen phủ các orbital nguyên tử (1. Xen phủ tạo liên kết σ, 2. Xen phủ tạo liên kết π) | IV. Năng lượng liên kết cộng hoá trị",
+      mien:["III"], congcu:"ChemSketch + 3D Viewer/Avogadro.",
+      hoatdong:"HS vẽ công thức Lewis, dự đoán dạng hình học theo VSEPR, dựng mô hình 3D bằng phần mềm để kiểm chứng dự đoán.",
+      sanpham:"Mô hình 3D phân tử (ảnh xuất từ phần mềm) kèm bảng VSEPR." },
+    { chuong:"Chương 3. Liên kết hoá học", bai:"Bài 13. Liên kết hydrogen và tương tác van der Waals",
+      ycc:"Trình bày được khái niệm liên kết hydrogen. Vận dụng để giải thích sự xuất hiện liên kết hydrogen (với nguyên tố có độ âm điện lớn: N, O, F). Nêu được vai trò, ảnh hưởng của liên kết hydrogen tới tính chất vật lí của nước. Nêu được khái niệm về tương tác van der Waals và ảnh hưởng của tương tác này tới nhiệt độ nóng chảy, nhiệt độ sôi của các chất.",
+      demuc:"I. Mở đầu | II. Liên kết hydrogen (1. Bản chất của liên kết hydrogen, 2. Vai trò và ảnh hưởng của liên kết hydrogen tới tính chất vật lí của nước) | III. Tương tác van der Waals (1. Khái niệm, 2. Ảnh hưởng đến nhiệt độ nóng chảy, nhiệt độ sôi)",
+      mien:["I"], congcu:"Video/mô phỏng giáo dục trực tuyến đã được kiểm duyệt.",
+      hoatdong:"HS tìm và đánh giá một video mô phỏng liên kết hydrogen từ nguồn đáng tin cậy, tóm tắt và liên hệ với nhiệt độ sôi đã học.",
+      sanpham:"Phiếu tóm tắt nguồn video kèm đánh giá độ tin cậy." },
+    { chuong:"Chương 3. Liên kết hoá học", bai:"Bài 14. Ôn tập chương 3",
+      ycc:"Hệ thống hoá kiến thức về liên kết hoá học.",
+      demuc:"I. Hệ thống hoá kiến thức | II. Luyện tập",
+      mien:["III","IV"], congcu:"Kahoot!/Quizizz.",
+      hoatdong:"HS ôn tập qua trò chơi trắc nghiệm trực tuyến; GV nhắc nhở bảo vệ thông tin cá nhân khi dùng nền tảng học tập trực tuyến.",
+      sanpham:"Kết quả trò chơi trực tuyến." },
+    { chuong:"Chương 4. Phản ứng oxi hoá – khử", bai:"Bài 15. Phản ứng oxi hoá – khử",
+      ycc:"Nêu được khái niệm và xác định được số oxi hoá của nguyên tử các nguyên tố trong hợp chất. Nêu được khái niệm và ý nghĩa của phản ứng oxi hoá – khử. Lập được phương trình hoá học của phản ứng oxi hoá – khử bằng phương pháp thăng bằng electron. Mô tả được một số phản ứng oxi hoá – khử quan trọng trong cuộc sống.",
+      demuc:"I. Số oxi hoá (1. Khái niệm, 2. Quy tắc xác định số oxi hoá) | II. Chất oxi hoá, chất khử, phản ứng oxi hoá – khử (1. Chất oxi hoá, chất khử — hoạt động TN, 2. Phản ứng oxi hoá – khử) | III. Lập phương trình hoá học của phản ứng oxi hoá – khử (phương pháp thăng bằng electron, 4 bước) | IV. Phản ứng oxi hoá – khử trong thực tiễn (1. Sự cháy, 2. Sự han gỉ kim loại, 3. Sản xuất hoá chất, 4. Chuyển hoá các chất trong tự nhiên, 5. Xác định nồng độ một chất bằng phản ứng oxi hoá – khử)",
+      mien:["I","V"], congcu:"Excel/Sheets; công cụ cân bằng phương trình trực tuyến để đối chiếu.",
+      hoatdong:"HS lập bảng theo dõi số oxi hoá bằng Excel khi cân bằng phương trình; dùng công cụ trực tuyến tự kiểm tra lại kết quả.",
+      sanpham:"Bảng Excel cân bằng phương trình oxi hoá – khử." },
+    { chuong:"Chương 4. Phản ứng oxi hoá – khử", bai:"Bài 16. Ôn tập chương 4",
+      ycc:"Hệ thống hoá kiến thức về phản ứng oxi hoá – khử.",
+      demuc:"I. Hệ thống hoá kiến thức | II. Luyện tập",
+      mien:["III"], congcu:"PowerPoint/video ngắn.",
+      hoatdong:"Nhóm HS quay video ngắn giải thích một phản ứng oxi hoá – khử thực tế và chia sẻ trong lớp.",
+      sanpham:"Video ngắn của nhóm." },
+    { chuong:"Chương 5. Năng lượng hoá học", bai:"Bài 17. Biến thiên enthalpy trong các phản ứng hoá học",
+      ycc:"Trình bày được khái niệm phản ứng toả nhiệt, thu nhiệt; điều kiện chuẩn; nhiệt tạo thành và biến thiên enthalpy (nhiệt phản ứng) của phản ứng. Nêu được ý nghĩa của dấu và giá trị của biến thiên enthalpy chuẩn. Tính được biến thiên enthalpy chuẩn của một số phản ứng theo năng lượng liên kết, nhiệt tạo thành.",
+      demuc:"I. Phản ứng toả nhiệt, phản ứng thu nhiệt (có hoạt động TN theo dõi nhiệt độ phản ứng trung hoà HCl–NaOH) | II. Biến thiên enthalpy của phản ứng (1. Biến thiên enthalpy, 2. Biến thiên enthalpy chuẩn, 3. Ý nghĩa của biến thiên enthalpy) | III. Tính biến thiên enthalpy của phản ứng theo nhiệt tạo thành (1. Khái niệm nhiệt tạo thành, 2. Công thức tính) | IV. Tính biến thiên enthalpy của phản ứng theo năng lượng liên kết",
+      mien:["I","V"], congcu:"Excel/Sheets (tính toán, vẽ biểu đồ năng lượng).",
+      hoatdong:"HS nhập số liệu nhiệt tạo thành/năng lượng liên kết vào Sheets, lập công thức tính ΔrH, vẽ giản đồ năng lượng minh hoạ phản ứng thu/toả nhiệt.",
+      sanpham:"Bảng tính và biểu đồ năng lượng phản ứng." },
+    { chuong:"Chương 5. Năng lượng hoá học", bai:"Bài 18. Ôn tập chương 5",
+      ycc:"Hệ thống hoá kiến thức về năng lượng hoá học.",
+      demuc:"I. Hệ thống hoá kiến thức | II. Luyện tập",
+      mien:["III"], congcu:"Canva/PowerPoint.",
+      hoatdong:"HS thiết kế bài trình chiếu hệ thống công thức và bài tập mẫu của chương.",
+      sanpham:"Bài trình chiếu tổng kết chương." },
+    { chuong:"Chương 6. Tốc độ phản ứng", bai:"Bài 19. Tốc độ phản ứng",
+      ycc:"Trình bày được khái niệm tốc độ phản ứng hoá học và cách tính tốc độ trung bình của phản ứng. Viết được biểu thức tốc độ phản ứng theo hằng số tốc độ phản ứng và nồng độ (định luật tác dụng khối lượng, chỉ đúng cho phản ứng đơn giản). Nêu được ý nghĩa hằng số tốc độ phản ứng. Thực hiện được một số thí nghiệm nghiên cứu và giải thích được các yếu tố ảnh hưởng tới tốc độ phản ứng (nồng độ, nhiệt độ, áp suất, diện tích bề mặt, chất xúc tác). Nêu được ý nghĩa của hệ số nhiệt độ Van't Hoff. Vận dụng được kiến thức tốc độ phản ứng hoá học vào việc giải thích một số vấn đề trong cuộc sống và sản xuất.",
+      demuc:"I. Tốc độ phản ứng hoá học (1. Khái niệm, 2. Tốc độ trung bình của phản ứng) | II. Các yếu tố ảnh hưởng đến tốc độ phản ứng (1. Nồng độ — TN, 2. Áp suất, 3. Nhiệt độ — TN + hệ số Van't Hoff, 4. Diện tích bề mặt — TN, 5. Chất xúc tác — TN) | III. Một số ứng dụng của việc thay đổi tốc độ phản ứng",
+      mien:["I","V"], congcu:"Phần mềm thí nghiệm ảo Yenka; Excel/Sheets.",
+      hoatdong:"HS dùng Yenka mô phỏng ảnh hưởng của nồng độ, nhiệt độ, diện tích tiếp xúc, chất xúc tác; ghi số liệu mô phỏng rồi nhập vào Sheets để vẽ đồ thị và tính tốc độ trung bình.",
+      sanpham:"Đồ thị tốc độ phản ứng dựng từ số liệu mô phỏng." },
+    { chuong:"Chương 6. Tốc độ phản ứng", bai:"Bài 20. Ôn tập chương 6",
+      ycc:"Hệ thống hoá kiến thức về tốc độ phản ứng.",
+      demuc:"I. Hệ thống hoá kiến thức | II. Luyện tập",
+      mien:["III"], congcu:"Kahoot!/Quizizz.",
+      hoatdong:"HS ôn tập qua trò chơi trắc nghiệm trực tuyến theo nhóm.",
+      sanpham:"Kết quả trò chơi trực tuyến." },
+    { chuong:"Chương 7. Nguyên tố nhóm halogen", bai:"Bài 21. Nhóm halogen",
+      ycc:"Nêu được trạng thái tự nhiên của các nguyên tố halogen. Mô tả được trạng thái, màu sắc, nhiệt độ nóng chảy, nhiệt độ sôi của các đơn chất halogen. Giải thích được sự biến đổi nhiệt độ nóng chảy, nhiệt độ sôi của các đơn chất halogen dựa vào tương tác van der Waals. Trình bày được xu hướng các halogen nhận thêm 1 electron (từ kim loại) hoặc dùng chung electron (với phi kim) để tạo hợp chất ion hoặc hợp chất cộng hoá trị dựa theo cấu hình electron. Giải thích được xu hướng phản ứng của các đơn chất halogen với hydrogen. Viết được phương trình hoá học của phản ứng tự oxi hoá – khử của chlorine. Thực hiện được (hoặc quan sát video) một số thí nghiệm chứng minh tính oxi hoá mạnh của các halogen và so sánh tính oxi hoá của các halogen trong nhóm VIIA.",
+      demuc:"I. Trạng thái tự nhiên | II. Cấu tạo nguyên tử, phân tử | III. Tính chất vật lí | IV. Tính chất hoá học (1. Tác dụng với kim loại, 2. Tác dụng với hydrogen, 3. Tác dụng với nước — TN tẩy màu, 4. Tác dụng với dung dịch kiềm, 5. Tác dụng với dung dịch halide — TN) | V. Điều chế chlorine",
+      mien:["I","VI"], congcu:"Trợ lí AI; nguồn tra cứu khoa học.",
+      hoatdong:"HS dùng AI hỗ trợ tổng hợp nhanh tính chất các đơn chất halogen, sau đó kiểm chứng từng ý với SGK/nguồn uy tín và chỉnh sửa điểm chưa chính xác.",
+      sanpham:"Bảng tổng hợp tính chất đã được HS kiểm chứng." },
+    { chuong:"Chương 7. Nguyên tố nhóm halogen", bai:"Bài 22. Hydrogen halide. Muối halide",
+      ycc:"Nhận xét và giải thích được xu hướng biến đổi nhiệt độ sôi của các hydrogen halide từ HCl tới HI. Giải thích được sự bất thường về nhiệt độ sôi của HF so với các HX khác. Trình bày được xu hướng biến đổi tính acid của dãy hydrohalic acid. Thực hiện được thí nghiệm phân biệt các ion F⁻, Cl⁻, Br⁻, I⁻. Trình bày được tính khử của các ion halide (Cl⁻, Br⁻, I⁻) thông qua phản ứng với chất oxi hoá là sulfuric acid đặc. Nêu được ứng dụng của một số hydrogen halide.",
+      demuc:"I. Hydrogen halide (1. Cấu tạo phân tử, 2. Tính chất vật lí) | II. Hydrohalic acid (1. Tính chất hoá học: a) Tính acid — TN, b) Tính khử; 2. Ứng dụng: a) Hydrogen fluoride, b) Hydrogen chloride) | III. Muối halide (1. Tính tan, 2. Tính chất hoá học: a) Phản ứng trao đổi — TN nhận biết ion halide, b) Tính khử của ion halide; 3. Muối ăn: a) Vai trò, b) Tinh chế)",
+      mien:["I","IV"], congcu:"Nguồn tra cứu an toàn hoá chất (Bảng chỉ dẫn an toàn hoá chất – SDS).",
+      hoatdong:"HS tra cứu thông tin an toàn (SDS) của một số hydrogen halide, tổng hợp biện pháp bảo quản, sử dụng an toàn; liên hệ nội dung phòng chống cháy nổ.",
+      sanpham:"Phiếu tóm tắt an toàn hoá chất." },
+    { chuong:"Chương 7. Nguyên tố nhóm halogen", bai:"Bài 23. Ôn tập chương 7",
+      ycc:"Hệ thống hoá kiến thức về nhóm halogen.",
+      demuc:"I. Hệ thống hoá kiến thức | II. Luyện tập",
+      mien:["III"], congcu:"Canva/PowerPoint.",
+      hoatdong:"Nhóm HS thiết kế infographic/trình chiếu tổng kết kiến thức nhóm halogen và thuyết trình.",
+      sanpham:"Infographic/trình chiếu tổng kết chương." },
+  ],
+
+  cd: [
+    { chuong:"Chuyên đề 1. Cơ sở hoá học", bai:"Bài 1. Liên kết hoá học",
+      ycc:"Viết được công thức Lewis, sử dụng mô hình VSEPR dự đoán dạng hình học phân tử; trình bày khái niệm lai hoá AO (sp, sp², sp³), vận dụng giải thích liên kết trong một số phân tử.",
+      mien:["III"], congcu:"ChemSketch (vẽ công thức Lewis, 3D Viewer).",
+      hoatdong:"HS thực hành vẽ công thức Lewis, dựng mô hình 3D, đo độ dài/góc liên kết bằng ChemSketch.",
+      sanpham:"Mô hình 3D phân tử kèm bảng tham số cấu trúc đã đo." },
+    { chuong:"Chuyên đề 1. Cơ sở hoá học", bai:"Bài 2. Phản ứng hạt nhân",
+      ycc:"Nêu sơ lược về phóng xạ tự nhiên và nhân tạo; vận dụng định luật bảo toàn số khối, điện tích; nêu ứng dụng phản ứng hạt nhân (y tế, năng lượng, khảo cổ).",
+      mien:["I","V"], congcu:"Nguồn tra cứu khoa học; Excel (tính chu kì bán rã).",
+      hoatdong:"HS tra cứu ứng dụng thực tế của đồng vị phóng xạ, dùng Excel minh hoạ sự suy giảm theo chu kì bán rã.",
+      sanpham:"Bảng/biểu đồ minh hoạ phân rã phóng xạ theo thời gian." },
+    { chuong:"Chuyên đề 1. Cơ sở hoá học", bai:"Bài 3. Năng lượng hoạt hoá của phản ứng hoá học",
+      ycc:"Trình bày khái niệm năng lượng hoạt hoá; nêu ảnh hưởng của năng lượng hoạt hoá và nhiệt độ tới tốc độ phản ứng qua phương trình Arrhenius; giải thích vai trò chất xúc tác.",
+      mien:["I","V"], congcu:"Excel/Sheets (phương trình Arrhenius).",
+      hoatdong:"HS dùng Sheets lập công thức tính hằng số tốc độ theo phương trình Arrhenius ở các nhiệt độ khác nhau, vẽ biểu đồ k theo T.",
+      sanpham:"Bảng tính/biểu đồ minh hoạ phương trình Arrhenius." },
+    { chuong:"Chuyên đề 1. Cơ sở hoá học", bai:"Bài 4. Entropy và biến thiên năng lượng tự do Gibbs",
+      ycc:"Nêu khái niệm entropy; nêu ý nghĩa dấu và trị số biến thiên năng lượng tự do Gibbs; tính được ΔrG° từ bảng dữ liệu ΔfH° và S°.",
+      mien:["I","V"], congcu:"Excel/Sheets.",
+      hoatdong:"HS dùng Sheets tính ΔrS, ΔrG từ bảng dữ liệu cho sẵn, lập công thức tự động để dự đoán chiều tự diễn biến của nhiều phản ứng.",
+      sanpham:"Bảng tính tự động ΔrG cho một tập hợp phản ứng." },
+
+    { chuong:"Chuyên đề 2. Hoá học trong việc phòng chống cháy, nổ", bai:"Bài 5. Sơ lược về phản ứng cháy, nổ",
+      ycc:"Nêu được khái niệm, đặc điểm phản ứng cháy; điều kiện cần và đủ để phản ứng cháy xảy ra; khái niệm phản ứng nổ, nổ vật lí, nổ hoá học, nổ bụi; tác hại sản phẩm cháy.",
+      mien:["I"], congcu:"Nguồn tra cứu tiêu chuẩn (TCVN), dữ liệu an toàn hoá chất.",
+      hoatdong:"HS tra cứu thông tin về một vụ cháy/nổ thực tế tại địa phương (nếu có) hoặc trên báo chí uy tín, phân tích theo \"tam giác cháy\".",
+      sanpham:"Phiếu phân tích vụ cháy/nổ theo tam giác cháy, kèm nguồn trích dẫn." },
+    { chuong:"Chuyên đề 2. Hoá học trong việc phòng chống cháy, nổ", bai:"Bài 6. Điểm chớp cháy. Nhiệt độ ngọn lửa. Nhiệt độ tự bốc cháy",
+      ycc:"Nêu khái niệm điểm chớp cháy, dùng để phân biệt chất lỏng dễ cháy và có thể gây cháy; nêu khái niệm nhiệt độ ngọn lửa, nhiệt độ tự bốc cháy.",
+      mien:["I"], congcu:"Nguồn dữ liệu an toàn hoá chất (SDS), bảng số liệu trực tuyến.",
+      hoatdong:"HS tra cứu điểm chớp cháy, nhiệt độ tự bốc cháy của một số nhiên liệu thực tế tại nhà/địa phương, đối chiếu với bảng số liệu SGK.",
+      sanpham:"Bảng số liệu tra cứu kèm nguồn trích dẫn." },
+    { chuong:"Chuyên đề 2. Hoá học trong việc phòng chống cháy, nổ", bai:"Bài 7. Hoá học về phản ứng cháy, nổ",
+      ycc:"Tính được ΔrH° một số phản ứng cháy, nổ để dự đoán mức độ mãnh liệt; tính sự thay đổi tốc độ phản ứng cháy/\"tốc độ phản ứng hô hấp\" theo nồng độ oxygen.",
+      mien:["I","V"], congcu:"Excel/Sheets.",
+      hoatdong:"HS dùng Sheets tính ΔrH của một số phản ứng cháy nhiên liệu thông dụng (than, gas, xăng, cồn) từ năng lượng liên kết/nhiệt tạo thành, so sánh mức độ mãnh liệt.",
+      sanpham:"Bảng tính ΔrH các phản ứng cháy đã so sánh." },
+    { chuong:"Chuyên đề 2. Hoá học trong việc phòng chống cháy, nổ", bai:"Bài 8. Phòng chống cháy, nổ",
+      ycc:"Phân tích dấu hiệu nguy cơ và cách giảm nguy cơ cháy, nổ; nguyên tắc chữa cháy; giải thích vì sao một số trường hợp không dùng nước/CO2 để chữa cháy.",
+      mien:["III","VI","IV"], congcu:"Canva/video; trợ lí AI hỗ trợ lên ý tưởng kịch bản.",
+      hoatdong:"Nhóm HS dùng AI gợi ý kịch bản, tự biên tập và sản xuất video/poster tuyên truyền phòng chống cháy nổ tại gia đình/trường học, có trích dẫn nguồn số liệu sử dụng.",
+      sanpham:"Video/poster tuyên truyền phòng chống cháy, nổ." },
+
+    { chuong:"Chuyên đề 3. Thực hành hoá học và công nghệ thông tin", bai:"Bài 9. Thực hành vẽ cấu trúc phân tử",
+      ycc:"Vẽ được công thức cấu tạo, công thức Lewis của một số chất vô cơ và hữu cơ; lưu file và chèn được hình ảnh vào file Word, PowerPoint.",
+      mien:["III"], congcu:"ChemSketch.",
+      hoatdong:"HS thực hành vẽ công thức cấu tạo, công thức Lewis, dựng mô hình 3D bằng ChemSketch và chèn ảnh vào văn bản/trình chiếu.",
+      sanpham:"File ChemSketch (.sk2) và ảnh đã chèn vào Word/PowerPoint." },
+    { chuong:"Chuyên đề 3. Thực hành hoá học và công nghệ thông tin", bai:"Bài 10. Thực hành thí nghiệm hoá học ảo",
+      ycc:"Thực hiện được các thí nghiệm ảo theo nội dung cho trước; phân tích và lí giải được kết quả thí nghiệm ảo.",
+      mien:["V","I"], congcu:"Yenka.",
+      hoatdong:"HS thực hành mô phỏng thí nghiệm có sẵn và tự thiết kế mô phỏng mới; xử lí số liệu mô phỏng thu được để tính tốc độ phản ứng.",
+      sanpham:"Mô phỏng đã thiết kế và kết quả tính tốc độ phản ứng." },
+    { chuong:"Chuyên đề 3. Thực hành hoá học và công nghệ thông tin", bai:"Bài 11. Thực hành tính tham số cấu trúc và năng lượng",
+      ycc:"Nêu được quy trình tính toán bằng phương pháp bán kinh nghiệm; sử dụng kết quả tính toán để thấy được hình học phân tử, xu hướng độ dài/góc liên kết và năng lượng phân tử trong dãy chất.",
+      mien:["V","I"], congcu:"MOPAC, Avogadro.",
+      hoatdong:"HS tạo file dữ liệu đầu vào, chạy tính toán bán kinh nghiệm AM1, đọc kết quả (nhiệt tạo thành, độ dài/góc liên kết) và hiển thị cấu trúc 3D.",
+      sanpham:"File kết quả MOPAC (.out) và ảnh cấu trúc 3D từ Avogadro." },
+  ],
+};
+
+/* ======================================================================
+   STATE & DOM WIRING
+   ====================================================================== */
+let currentLesson = null;
+let variationRun = 0;
+let currentVariant = null;
+function grade11Lesson(chuong, bai, ycc, mien=["I","III"]){
+  return { chuong, bai, ycc, mien, congcu:"SGK, học liệu số, mô phỏng hoặc bảng tính phù hợp.", hoatdong:"HS khai thác học liệu, thảo luận, kiểm chứng thông tin và hoàn thành nhiệm vụ học tập bằng công cụ số phù hợp.", sanpham:"Phiếu học tập hoặc sản phẩm số có trích dẫn nguồn." };
+}
+const DATA11 = {
+  sgk: [
+    grade11Lesson("Chương 1. Cân bằng hóa học", "Bài 1. Khái niệm về cân bằng hóa học", "Trình bày được khái niệm cân bằng hóa học, hằng số cân bằng và các yếu tố ảnh hưởng đến cân bằng hóa học."),
+    grade11Lesson("Chương 1. Cân bằng hóa học", "Bài 2. Cân bằng trong dung dịch nước", "Trình bày được các khái niệm acid-base, pH và vận dụng được kiến thức về cân bằng trong dung dịch nước."),
+    grade11Lesson("Chương 1. Cân bằng hóa học", "Bài 3. Ôn tập chương 1", "Hệ thống hóa và vận dụng kiến thức cân bằng hóa học để giải quyết bài tập."),
+    grade11Lesson("Chương 2. Nitrogen - sulfur", "Bài 4. Nitrogen", "Nêu được trạng thái tự nhiên, cấu tạo, tính chất và ứng dụng của nitrogen."),
+    grade11Lesson("Chương 2. Nitrogen - sulfur", "Bài 5. Ammonia. Muối ammonium", "Trình bày được cấu tạo, tính chất, ứng dụng của ammonia và muối ammonium."),
+    grade11Lesson("Chương 2. Nitrogen - sulfur", "Bài 6. Một số hợp chất của nitrogen với oxygen", "Trình bày được tính chất, tác động môi trường và ứng dụng của một số oxide của nitrogen."),
+    grade11Lesson("Chương 2. Nitrogen - sulfur", "Bài 7. Sulfur và sulfur dioxide", "Trình bày được tính chất, ứng dụng và tác động môi trường của sulfur, sulfur dioxide."),
+    grade11Lesson("Chương 2. Nitrogen - sulfur", "Bài 8. Sulfuric acid và muối sulfate", "Trình bày được tính chất, ứng dụng của sulfuric acid và nhận biết ion sulfate."),
+    grade11Lesson("Chương 2. Nitrogen - sulfur", "Bài 9. Ôn tập chương 2", "Hệ thống hóa và vận dụng kiến thức về nitrogen và sulfur."),
+    grade11Lesson("Chương 3. Đại cương về hóa học hữu cơ", "Bài 10. Hợp chất hữu cơ và hóa học hữu cơ", "Nêu được khái niệm, phân loại và đặc điểm của hợp chất hữu cơ."),
+    grade11Lesson("Chương 3. Đại cương về hóa học hữu cơ", "Bài 11. Phương pháp tách biệt và tinh chế hợp chất hữu cơ", "Trình bày được nguyên tắc và vận dụng một số phương pháp tách biệt, tinh chế hợp chất hữu cơ."),
+    grade11Lesson("Chương 3. Đại cương về hóa học hữu cơ", "Bài 12. Công thức phân tử hợp chất hữu cơ", "Xác định được công thức phân tử hợp chất hữu cơ từ dữ kiện phù hợp."),
+    grade11Lesson("Chương 3. Đại cương về hóa học hữu cơ", "Bài 13. Cấu tạo hóa học hợp chất hữu cơ", "Trình bày được thuyết cấu tạo hóa học, đồng đẳng và đồng phân."),
+    grade11Lesson("Chương 3. Đại cương về hóa học hữu cơ", "Bài 14. Ôn tập chương 3", "Hệ thống hóa kiến thức đại cương hóa học hữu cơ."),
+    grade11Lesson("Chương 4. Hydrocarbon", "Bài 15. Alkane", "Trình bày được cấu tạo, tính chất, ứng dụng của alkane."),
+    grade11Lesson("Chương 4. Hydrocarbon", "Bài 16. Hydrocarbon không no", "Trình bày được cấu tạo, tính chất đặc trưng và ứng dụng của hydrocarbon không no."),
+    grade11Lesson("Chương 4. Hydrocarbon", "Bài 17. Arene (Hydrocarbon thơm)", "Trình bày được cấu tạo, tính chất và ứng dụng của arene."),
+    grade11Lesson("Chương 4. Hydrocarbon", "Bài 18. Ôn tập chương 4", "Hệ thống hóa và vận dụng kiến thức về hydrocarbon."),
+    grade11Lesson("Chương 5. Dẫn xuất halogen - alcohol - phenol", "Bài 19. Dẫn xuất halogen", "Trình bày được đặc điểm cấu tạo, tính chất và ứng dụng của dẫn xuất halogen."),
+    grade11Lesson("Chương 5. Dẫn xuất halogen - alcohol - phenol", "Bài 20. Alcohol", "Trình bày được cấu tạo, tính chất, ứng dụng của alcohol."),
+    grade11Lesson("Chương 5. Dẫn xuất halogen - alcohol - phenol", "Bài 21. Phenol", "Trình bày được cấu tạo, tính chất và ứng dụng của phenol."),
+    grade11Lesson("Chương 5. Dẫn xuất halogen - alcohol - phenol", "Bài 22. Ôn tập chương 5", "Hệ thống hóa kiến thức về dẫn xuất halogen, alcohol và phenol."),
+    grade11Lesson("Chương 6. Hợp chất carbonyl - carboxylic acid", "Bài 23. Hợp chất carbonyl", "Trình bày được cấu tạo, tính chất và ứng dụng của hợp chất carbonyl."),
+    grade11Lesson("Chương 6. Hợp chất carbonyl - carboxylic acid", "Bài 24. Carboxylic acid", "Trình bày được cấu tạo, tính chất và ứng dụng của carboxylic acid."),
+    grade11Lesson("Chương 6. Hợp chất carbonyl - carboxylic acid", "Bài 25. Ôn tập chương 6", "Hệ thống hóa kiến thức về hợp chất carbonyl và carboxylic acid.")
+  ],
+  cd: [
+    grade11Lesson("Chuyên đề 1. Phân bón", "Bài 1. Giới thiệu chung về phân bón", "Trình bày được vai trò, phân loại và nguyên tắc sử dụng phân bón.", ["I","II"]),
+    grade11Lesson("Chuyên đề 1. Phân bón", "Bài 2. Phân bón vô cơ", "Tìm hiểu được thành phần, sử dụng và an toàn khi dùng phân bón vô cơ.", ["I","III"]),
+    grade11Lesson("Chuyên đề 1. Phân bón", "Bài 3. Phân bón hữu cơ", "Tìm hiểu được thành phần, cách sử dụng và lợi ích của phân bón hữu cơ.", ["I","III"]),
+    grade11Lesson("Chuyên đề 2. Trải nghiệm, thực hành hóa học hữu cơ", "Bài 4. Tách tinh dầu từ các nguồn thảo mộc tự nhiên", "Thực hiện hoặc mô tả được quy trình tách tinh dầu từ nguồn thảo mộc.", ["III","V"]),
+    grade11Lesson("Chuyên đề 2. Trải nghiệm, thực hành hóa học hữu cơ", "Bài 5. Chuyển hóa chất béo thành xà phòng", "Thực hiện hoặc mô tả được quá trình xà phòng hóa chất béo.", ["III","V"]),
+    grade11Lesson("Chuyên đề 2. Trải nghiệm, thực hành hóa học hữu cơ", "Bài 6. Điều chế glucosamine hydrochloride từ vỏ tôm", "Tìm hiểu và mô tả được quy trình điều chế glucosamine hydrochloride từ vỏ tôm.", ["I","III"]),
+    grade11Lesson("Chuyên đề 3. Dầu mỏ và chế biến dầu mỏ", "Bài 7. Nguồn gốc dầu mỏ. Thành phần và phân loại dầu mỏ", "Trình bày được nguồn gốc, thành phần và phân loại dầu mỏ.", ["I","III"]),
+    grade11Lesson("Chuyên đề 3. Dầu mỏ và chế biến dầu mỏ", "Bài 8. Chế biến dầu mỏ", "Trình bày được một số phương pháp chế biến dầu mỏ.", ["I","V"]),
+    grade11Lesson("Chuyên đề 3. Dầu mỏ và chế biến dầu mỏ", "Bài 9. Ngành sản xuất dầu mỏ trên thế giới và ở Việt Nam", "Tìm hiểu được vai trò, hiện trạng và tác động của ngành sản xuất dầu mỏ.", ["I","III"])
+  ]
+};
+const DATA12 = {
+  sgk: [
+    grade11Lesson("Chương 1. Ester - lipid", "Bài 1. Ester - Lipid", "Trình bày được cấu tạo, tính chất và ứng dụng của ester, lipid."),
+    grade11Lesson("Chương 1. Ester - lipid", "Bài 2. Xà phòng và chất giặt rửa", "Trình bày được thành phần, cơ chế giặt rửa và ứng dụng của xà phòng, chất giặt rửa."),
+    grade11Lesson("Chương 1. Ester - lipid", "Bài 3. Ôn tập chương 1", "Hệ thống hóa kiến thức ester và lipid."),
+    grade11Lesson("Chương 2. Carbohydrate", "Bài 4. Giới thiệu về carbohydrate. Glucose và fructose", "Trình bày được khái niệm carbohydrate và tính chất của glucose, fructose."),
+    grade11Lesson("Chương 2. Carbohydrate", "Bài 5. Saccharose và maltose", "Trình bày được cấu tạo, tính chất và ứng dụng của saccharose, maltose."),
+    grade11Lesson("Chương 2. Carbohydrate", "Bài 6. Tinh bột và cellulose", "Trình bày được cấu tạo, tính chất và ứng dụng của tinh bột, cellulose."),
+    grade11Lesson("Chương 2. Carbohydrate", "Bài 7. Ôn tập chương 2", "Hệ thống hóa kiến thức carbohydrate."),
+    grade11Lesson("Chương 3. Hợp chất chứa nitrogen", "Bài 8. Amine", "Trình bày được cấu tạo, tính chất và ứng dụng của amine."),
+    grade11Lesson("Chương 3. Hợp chất chứa nitrogen", "Bài 9. Amino acid và peptide", "Trình bày được khái niệm, cấu tạo và tính chất của amino acid, peptide."),
+    grade11Lesson("Chương 3. Hợp chất chứa nitrogen", "Bài 10. Protein và enzyme", "Trình bày được cấu tạo, tính chất, vai trò của protein và enzyme."),
+    grade11Lesson("Chương 3. Hợp chất chứa nitrogen", "Bài 11. Ôn tập chương 3", "Hệ thống hóa kiến thức hợp chất chứa nitrogen."),
+    grade11Lesson("Chương 4. Polymer", "Bài 12. Đại cương về polymer", "Trình bày được khái niệm, phân loại và đặc điểm của polymer."),
+    grade11Lesson("Chương 4. Polymer", "Bài 13. Vật liệu polymer", "Trình bày được đặc điểm, ứng dụng và tác động môi trường của vật liệu polymer."),
+    grade11Lesson("Chương 4. Polymer", "Bài 14. Ôn tập chương 4", "Hệ thống hóa kiến thức polymer."),
+    grade11Lesson("Chương 5. Pin điện và điện phân", "Bài 15. Thế điện cực và nguồn điện hóa học", "Trình bày được khái niệm thế điện cực và nguyên tắc hoạt động của nguồn điện hóa học."),
+    grade11Lesson("Chương 5. Pin điện và điện phân", "Bài 16. Điện phân", "Trình bày được quá trình điện phân và một số ứng dụng."),
+    grade11Lesson("Chương 5. Pin điện và điện phân", "Bài 17. Ôn tập chương 5", "Hệ thống hóa kiến thức pin điện và điện phân."),
+    grade11Lesson("Chương 6. Đại cương về kim loại", "Bài 18. Cấu tạo và liên kết trong tinh thể kim loại", "Trình bày được cấu tạo và liên kết trong tinh thể kim loại."),
+    grade11Lesson("Chương 6. Đại cương về kim loại", "Bài 19. Tính chất vật lí và tính chất hóa học của kim loại", "Trình bày được tính chất vật lí, hóa học chung của kim loại."),
+    grade11Lesson("Chương 6. Đại cương về kim loại", "Bài 20. Kim loại trong tự nhiên và phương pháp tách kim loại", "Trình bày được sự tồn tại của kim loại và nguyên tắc tách kim loại."),
+    grade11Lesson("Chương 6. Đại cương về kim loại", "Bài 21. Hợp kim", "Trình bày được khái niệm, tính chất và ứng dụng của hợp kim."),
+    grade11Lesson("Chương 6. Đại cương về kim loại", "Bài 22. Sự ăn mòn kim loại", "Trình bày được các dạng ăn mòn kim loại và biện pháp bảo vệ."),
+    grade11Lesson("Chương 6. Đại cương về kim loại", "Bài 23. Ôn tập chương 6", "Hệ thống hóa kiến thức đại cương về kim loại."),
+    grade11Lesson("Chương 7. Nguyên tố nhóm IA và nhóm IIA", "Bài 24. Nguyên tố nhóm IA", "Trình bày được tính chất và ứng dụng của nguyên tố nhóm IA."),
+    grade11Lesson("Chương 7. Nguyên tố nhóm IA và nhóm IIA", "Bài 25. Nguyên tố nhóm IIA", "Trình bày được tính chất và ứng dụng của nguyên tố nhóm IIA."),
+    grade11Lesson("Chương 7. Nguyên tố nhóm IA và nhóm IIA", "Bài 26. Ôn tập chương 7", "Hệ thống hóa kiến thức nguyên tố nhóm IA và IIA."),
+    grade11Lesson("Chương 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất", "Bài 27. Đại cương về kim loại chuyển tiếp dãy thứ nhất", "Trình bày được đặc điểm chung của kim loại chuyển tiếp dãy thứ nhất."),
+    grade11Lesson("Chương 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất", "Bài 28. Sơ lược về phức chất", "Trình bày được khái niệm, thành phần và một số đặc điểm của phức chất."),
+    grade11Lesson("Chương 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất", "Bài 29. Một số tính chất và ứng dụng của phức chất", "Trình bày được một số tính chất và ứng dụng của phức chất."),
+    grade11Lesson("Chương 8. Sơ lược về dãy kim loại chuyển tiếp thứ nhất và phức chất", "Bài 30. Ôn tập chương 8", "Hệ thống hóa kiến thức về kim loại chuyển tiếp và phức chất.")
+  ],
+  cd: [
+    grade11Lesson("Chuyên đề 1. Cơ chế phản ứng trong hóa học hữu cơ", "Bài 1. Đại cương về cơ chế phản ứng", "Trình bày được khái niệm cơ chế phản ứng trong hóa học hữu cơ.", ["I","V"]),
+    grade11Lesson("Chuyên đề 1. Cơ chế phản ứng trong hóa học hữu cơ", "Bài 2. Cơ chế phản ứng thế", "Trình bày được đặc điểm cơ bản của cơ chế phản ứng thế.", ["I","V"]),
+    grade11Lesson("Chuyên đề 1. Cơ chế phản ứng trong hóa học hữu cơ", "Bài 3. Cơ chế phản ứng cộng", "Trình bày được đặc điểm cơ bản của cơ chế phản ứng cộng.", ["I","V"]),
+    grade11Lesson("Chuyên đề 2. Trải nghiệm, thực hành hóa học vô cơ", "Bài 4. Tái chế kim loại", "Tìm hiểu và thực hiện được một số hoạt động tái chế kim loại phù hợp.", ["III","IV"]),
+    grade11Lesson("Chuyên đề 2. Trải nghiệm, thực hành hóa học vô cơ", "Bài 5. Công nghiệp silicate", "Tìm hiểu được quy trình, sản phẩm và ứng dụng của công nghiệp silicate.", ["I","III"]),
+    grade11Lesson("Chuyên đề 2. Trải nghiệm, thực hành hóa học vô cơ", "Bài 6. Xử lí nước sinh hoạt", "Tìm hiểu và đề xuất được biện pháp xử lí nước sinh hoạt phù hợp.", ["I","III"]),
+    grade11Lesson("Chuyên đề 3. Một số vấn đề cơ bản về phức chất", "Bài 7. Một số vấn đề cơ bản về phức chất", "Trình bày được các vấn đề cơ bản liên quan đến phức chất.", ["I","III"]),
+    grade11Lesson("Chuyên đề 3. Một số vấn đề cơ bản về phức chất", "Bài 8. Liên kết và cấu tạo của phức chất", "Trình bày được liên kết và cấu tạo cơ bản của phức chất.", ["I","V"]),
+    grade11Lesson("Chuyên đề 3. Một số vấn đề cơ bản về phức chất", "Bài 9. Vai trò và ứng dụng của phức chất", "Tìm hiểu được vai trò và ứng dụng của phức chất.", ["I","III"])
+  ]
+};
+const $ = (id) => document.getElementById(id);
+function activeData(){ return ({"10": DATA, "11": DATA11, "12": DATA12})[$("selGrade")?.value || "10"]; }
+function activeGrade(){ return $("selGrade")?.value || "10"; }
+function refreshGradeLabels(){
+  const grade = activeGrade();
+  document.querySelector(".brand-tile").textContent = grade;
+  document.querySelector(".brand-text h1").textContent = `Soạn KHBD Hóa ${grade}`;
+  $("selSource").options[0].textContent = `SGK Hóa học ${grade}`;
+  $("selSource").options[1].textContent = `Chuyên đề học tập Hóa học ${grade}`;
+  document.title = `Soạn KHBD Hóa học ${grade}`;
+  document.querySelector(".brand-text h1").textContent = `Soạn KHBD Hóa ${grade}`;
+}
+const STORAGE_KEY = "khbd-hoa10-draft-v2";
+const DEPT_STORAGE_KEY = "khbd-hoa10-department-plan-v2";
+const DEPT_TEMPLATE = $("deptPaper").innerHTML;
+function deptStorageKey(){ return `${DEPT_STORAGE_KEY}-grade-${activeGrade()}`; }
+let autosaveTimer = null;
+
+
+
+const VARIATION_BANK = {
+  hooks: [
+    "tình huống thực tiễn bằng hình ảnh/hiện tượng gần gũi",
+    "câu hỏi dự đoán nhanh trước khi xem mô phỏng",
+    "mẩu dữ liệu nhỏ để HS phát hiện vấn đề",
+    "trò chơi mở ô chữ hoặc đoán từ khóa",
+    "so sánh hai nhận định đúng/sai để tạo tranh luận"
+  ],
+  techniques: [
+    "khăn trải bàn", "mảnh ghép", "phòng tranh", "trạm học tập",
+    "băng chuyền", "think-pair-share", "hỏi chuyên gia", "sơ đồ tư duy nhóm"
+  ],
+  digitalTools: [
+    "Google Forms", "Quizizz", "Canva", "Padlet", "Google Sheets",
+    "PhET", "ChemSketch", "Avogadro", "video/mô phỏng đã kiểm chứng"
+  ],
+  products: [
+    "poster/infographic số", "phiếu kiểm chứng nguồn", "bảng dữ liệu có công thức",
+    "sơ đồ tư duy số", "slide báo cáo ngắn", "video giải thích 1 phút",
+    "bảng so sánh kèm trích dẫn nguồn"
+  ]
+};
+function pickFrom(list, salt=0){
+  if(!list.length) return "";
+  const base = currentLesson ? (currentLesson.bai.length + currentLesson.chuong.length) : 0;
+  const idx = Math.abs(base + variationRun * 7 + salt * 3 + new Date().getMinutes()) % list.length;
+  return list[idx];
+}
+function buildVariant(){
+  return {
+    id: `${Date.now().toString(36)}-${variationRun}`,
+    hook: pickFrom(VARIATION_BANK.hooks, 1),
+    technique: pickFrom(VARIATION_BANK.techniques, 2),
+    digitalTool: pickFrom(VARIATION_BANK.digitalTools, 3),
+    product: pickFrom(VARIATION_BANK.products, 4),
+    difference: $("selVariation")?.value || "medium"
+  };
+}
+function ensureVariant(force=false){
+  if(force || !currentVariant) currentVariant = buildVariant();
+  return currentVariant;
+}
+function classProfileLabel(value){
+  return ({
+    mixed:"Phân hóa: có đủ mức độ HS",
+    strong:"Lớp khá/giỏi, tăng thử thách",
+    support:"Lớp cần hỗ trợ, nhiệm vụ vừa sức",
+    practice:"Ưu tiên thực hành/thí nghiệm"
+  })[value] || value || "";
+}
+function facilitiesLabel(value){
+  return ({
+    standard:"Lớp học thường + máy chiếu",
+    lab:"Có phòng thí nghiệm",
+    internet:"Có Internet/thiết bị cá nhân",
+    limited:"Thiết bị hạn chế"
+  })[value] || value || "";
+}
+function variationLabel(value){
+  return ({
+    light:"Nhẹ: giữ khung, đổi tình huống/câu chữ",
+    medium:"Vừa: đổi hoạt động, câu hỏi, sản phẩm",
+    strong:"Mạnh: đổi kĩ thuật dạy học và sản phẩm"
+  })[value] || value || "";
+}
+function getPersonalizationBlock(){
+  const v = ensureVariant(false);
+  return `THÔNG TIN CÁ NHÂN HÓA CỦA GIÁO VIÊN
+- Giáo viên/nhóm soạn: ${$("inpTeacher")?.value.trim() || "(chưa nhập)"}
+- Đặc điểm lớp: ${classProfileLabel($("selClassProfile")?.value)}
+- Điều kiện tổ chức: ${facilitiesLabel($("selFacilities")?.value)}
+- Mức độ khác biệt mong muốn: ${variationLabel($("selVariation")?.value)}
+- Biến thể đang dùng: ${v.id}
+- Gợi ý biến thể: mở đầu bằng ${v.hook}; kĩ thuật dạy học ${v.technique}; công cụ số ${v.digitalTool}; sản phẩm ${v.product}.
+`;
+}
+function saveDeptPlan(show=true){
+  localStorage.setItem(deptStorageKey(), $("deptPaper")?.innerHTML || "");
+  if(show) showToast("Đã lưu kế hoạch tổ chuyên môn.");
+}
+function loadDeptPlan(show=false){
+  const plan = localStorage.getItem(deptStorageKey());
+  const isCurrentTemplate = plan && plan.includes('id="deptDistribution"') && plan.includes('id="deptSecondSession"') && plan.includes('id="inpSchoolWeeks"');
+  if(isCurrentTemplate && $("deptPaper")) $("deptPaper").innerHTML = plan;
+  if(show) showToast(isCurrentTemplate ? "Đã khôi phục kế hoạch tổ chuyên môn." : "Chưa có kế hoạch tổ đã lưu.");
+  return Boolean(isCurrentTemplate);
+}
+function createLegacyDeptPlan(){
+  const deptName = $("inpDeptName")?.value.trim() || "Tổ Hóa học";
+  const schoolYear = $("inpSchoolYear")?.value.trim() || "Năm học ............";
+  const source = $("selSource").value;
+  const lessons = DATA[source] || [];
+  const grouped = lessons.reduce((groups, lesson) => {
+    (groups[lesson.chuong] ||= []).push(lesson);
+    return groups;
+  }, {});
+  const distribution = Object.entries(grouped).map(([chapter, items]) => {
+    const lessonRows = items.map((item, index) => `  ${index + 1}. ${item.bai} (${item.mien.join(", ")})`).join("\\n");
+    return `- ${chapter}\\n${lessonRows}`;
+  }).join("\\n");
+  const plan = `KẾ HOẠCH GIÁO DỤC MÔN HÓA HỌC 10\\n${deptName}\\n${schoolYear}\\n\\n1. Mục tiêu chung\\n- Thực hiện Chương trình GDPT 2018 môn Hóa học 10; bảo đảm yêu cầu cần đạt, phát triển năng lực hóa học, năng lực chung và phẩm chất học sinh.\\n- Tích hợp năng lực số ở mức Nâng cao 1 phù hợp từng bài học; ưu tiên nhiệm vụ tìm kiếm, kiểm chứng, tạo sản phẩm số và sử dụng công cụ số an toàn, có trách nhiệm.\\n- Thống nhất sử dụng kế hoạch bài dạy theo Công văn 5512; giáo viên được điều chỉnh tình huống, phương pháp, câu hỏi, sản phẩm và mức độ phân hóa theo lớp phụ trách.\\n\\n2. Định hướng tổ chức dạy học\\n- Tăng cường thí nghiệm, mô phỏng, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác khoa học, bản quyền học liệu và an toàn khi tổ chức thực hành/thí nghiệm.\\n\\n3. Phân phối nội dung đề xuất\\n${distribution}\\n\\n4. Kiểm tra, đánh giá\\n- Đánh giá thường xuyên bằng quan sát, hỏi đáp, phiếu học tập, sản phẩm học tập và tự/đánh giá đồng đẳng.\\n- Đánh giá định kì thực hiện theo kế hoạch nhà trường; ma trận và đặc tả được tổ thống nhất trước khi triển khai.\\n\\n5. Thống nhất chuyên môn\\n- Dùng các mã chỉ báo NLS x.y.NC1a/b đúng với nhiệm vụ số của bài; không gắn mã hình thức.\\n- Họp tổ rà soát tiến độ, học liệu, thiết bị và điều chỉnh kế hoạch khi có thay đổi thực tế.\\n\\nGhi chú: Đây là bản khung do ứng dụng tạo. Tổ chuyên môn bổ sung tuần dạy, số tiết thực tế, chuyên đề, kế hoạch kiểm tra và các yêu cầu riêng của nhà trường trước khi ban hành.`;
+  $("txtDeptPlan").value = plan;
+  saveDeptPlan(false);
+  scheduleDraftSave();
+  showToast("Đã tạo khung kế hoạch Tổ chuyên môn. Bạn có thể chỉnh sửa trực tiếp.");
+}
+
+function nlsSummary(lesson){
+  const items = [];
+  lesson.mien.forEach(code => {
+    const descriptor = NLS_DESCRIPTORS[code];
+    const item = descriptor && descriptor.items[0];
+    if(item) items.push({ code: `${item.code}.NC1a`, text: item.yccd[0] || item.ten });
+  });
+  return { codes: items.map(item => item.code).join("; "), text: items.map(item => `[${item.code}] ${item.text}`).join(" ") };
+}
+function editableRows(rows){
+  return rows.map(row => `<tr>${row.map((cell, index) => `<td class="${index === 0 ? "center" : ""}" contenteditable="true">${esc(String(cell)).replace(/\n/g,"<br>")}</td>`).join("")}</tr>`).join("");
+}
+function scheduleSettings(){
+  const totalWeeks = Math.max(35, parseInt($("inpSchoolWeeks")?.value || "38", 10));
+  const periodsPerWeek = Math.max(1, parseInt($("inpPeriodsPerWeek")?.value || "2", 10));
+  const tetWeek = Math.min(totalWeeks, Math.max(1, parseInt($("inpTetWeek")?.value || "22", 10)));
+  const nonTeaching = new Map([[19, "Sơ kết học kì I / điều chỉnh kế hoạch"], [tetWeek, "Nghỉ Tết Nguyên đán"], [totalWeeks, "Tổng kết năm học / dự phòng"]]);
+  const teachingWeeks = Array.from({length: totalWeeks}, (_, index) => index + 1).filter(week => !nonTeaching.has(week));
+  return { totalWeeks, periodsPerWeek, tetWeek, nonTeaching, teachingWeeks };
+}
+function allocateLessonPeriods(lessons, totalPeriods){
+  const periods = lessons.map(() => 2);
+  let extra = Math.max(0, totalPeriods - periods.reduce((sum, value) => sum + value, 0));
+  const priority = lessons.map((lesson, index) => ({ index, score: (lesson.ycc || "").length + (/Ôn tập/i.test(lesson.bai) ? -1000 : 0) })).sort((a,b) => b.score - a.score);
+  let cursor = 0;
+  while(extra > 0 && priority.length){ periods[priority[cursor % priority.length].index] += 1; extra -= 1; cursor += 1; }
+  return periods;
+}
+function scheduleRows(lessons){
+  const settings = scheduleSettings();
+  const totalPeriods = settings.teachingWeeks.length * settings.periodsPerWeek;
+  const allocations = allocateLessonPeriods(lessons, totalPeriods);
+  const slots = settings.teachingWeeks.flatMap(week => Array.from({length:settings.periodsPerWeek}, (_, index) => ({week, period:index + 1})));
+  let slotIndex = 0;
+  let eventIndex = 0;
+  const eventWeeks = [...settings.nonTeaching.keys()].sort((a,b) => a - b);
+  const rows = [];
+  lessons.forEach((lesson, index) => {
+    const nls = nlsSummary(lesson);
+    const amount = allocations[index];
+    const start = slots[slotIndex];
+    const end = slots[Math.min(slots.length - 1, slotIndex + amount - 1)];
+    while(eventIndex < eventWeeks.length && eventWeeks[eventIndex] < start.week){
+      const week = eventWeeks[eventIndex++];
+      rows.push(`<tr><td colspan="6" class="center" contenteditable="true"><b>Tuần ${week}: ${esc(settings.nonTeaching.get(week))}</b></td></tr>`);
+    }
+    const weekText = start.week === end.week ? `Tuần ${start.week}` : `Tuần ${start.week} - ${end.week}`;
+    const periodText = amount === 1 ? `Tiết ${slotIndex + 1}` : `Tiết ${slotIndex + 1} - ${slotIndex + amount}`;
+    rows.push(editableRows([[weekText, `${periodText} (${amount} tiết)`, `${lesson.chuong}\n${lesson.bai}`, lesson.ycc, nls.text, nls.codes]]));
+    slotIndex += amount;
+  });
+  while(eventIndex < eventWeeks.length){
+    const week = eventWeeks[eventIndex++];
+    rows.push(`<tr><td colspan="6" class="center" contenteditable="true"><b>Tuần ${week}: ${esc(settings.nonTeaching.get(week))}</b></td></tr>`);
+  }
+  return rows.join("");
+}
+function createDeptPlan(){
+  const grade = activeGrade();
+  $("deptTitle").innerHTML = `HOẠT ĐỘNG GIÁO DỤC HÓA HỌC KHỐI LỚP ${grade}<br>(Năm học 2026 - 2027)`;
+  const lessons = activeData().sgk || [];
+  $("deptDevices").querySelector("tbody").innerHTML = editableRows([
+    [1,"Bộ dụng cụ thí nghiệm và hóa chất theo danh mục nhà trường", "....", "Các bài có thí nghiệm/thực hành", "Bổ sung theo điều kiện thực tế"],
+    [2,"Máy chiếu, máy tính, học liệu số, mô phỏng", "....", "Các bài cần trực quan hóa hoặc khai thác học liệu số", ""],
+    [3,"Phiếu học tập, vật liệu STEM", "....", "Hoạt động vận dụng và trải nghiệm", ""]
+  ]);
+  $("deptRooms").querySelector("tbody").innerHTML = editableRows([
+    [1,"Phòng thực hành bộ môn Hóa học", "....", "Dạy các bài thực hành/thí nghiệm", ""],
+    [2,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác học liệu số, mô phỏng, kiểm tra trực tuyến", ""],
+    [3,"Sân trường/không gian trải nghiệm", "....", "Hoạt động STEM, trải nghiệm, câu lạc bộ", ""]
+  ]);
+  $("deptDistribution").querySelector("tbody").innerHTML = scheduleRows(lessons);
+  const specialistLessons = activeData().cd || [];
+  $("deptTopics").querySelector("tbody").innerHTML = editableRows(specialistLessons.map((lesson, index) => {
+    const nls = nlsSummary(lesson);
+    return [index + 1, `${lesson.chuong}\n${lesson.bai}`, "1", lesson.ycc, nls.text, nls.codes];
+  }));
+  $("deptAssessments").querySelector("tbody").innerHTML = editableRows([
+    ["Giữa Học kì I", ".... phút", "Tuần ....", "Nội dung đã học đến thời điểm kiểm tra", "Theo kế hoạch nhà trường"],
+    ["Cuối Học kì I", ".... phút", "Tuần ....", "Nội dung Học kì I", "Theo kế hoạch nhà trường"],
+    ["Giữa Học kì II", ".... phút", "Tuần ....", "Nội dung đã học đến thời điểm kiểm tra", "Theo kế hoạch nhà trường"],
+    ["Cuối Học kì II", ".... phút", "Tuần ....", "Nội dung Học kì II", "Theo kế hoạch nhà trường"]
+  ]);
+  $("deptSecondSession").querySelector("tbody").innerHTML = editableRows(lessons.map((lesson, index) => {
+    const nls = nlsSummary(lesson);
+    return [`Tuần ${index + 1}`, `Ôn tập, củng cố và vận dụng: ${lesson.bai}`, nls.text];
+  }));
+  saveDeptPlan(false);
+  showToast("Đã tạo Kế hoạch Tổ theo khung mẫu. Bạn có thể chỉnh sửa trực tiếp từng ô.");
+}
+function populateChuong(){
+  const src = $("selSource").value;
+  const list = activeData()[src];
+  const chuongSet = [...new Set(list.map(l => l.chuong))];
+  $("selChuong").innerHTML = chuongSet.map(c => `<option value="${escAttr(c)}">${esc(c)}</option>`).join("");
+  populateBai();
+}
+function populateBai(){
+  const src = $("selSource").value;
+  const chuong = $("selChuong").value;
+  const list = activeData()[src].filter(l => l.chuong === chuong);
+  $("selBai").innerHTML = list.map((l,i) => `<option value="${i}">${esc(l.bai)}</option>`).join("");
+  selectLesson();
+}
+function selectLesson(){
+  const src = $("selSource").value;
+  const chuong = $("selChuong").value;
+  const list = activeData()[src].filter(l => l.chuong === chuong);
+  const idx = parseInt($("selBai").value || "0", 10);
+  currentLesson = list[idx];
+  if(!currentLesson) return;
+  const specialist = src === "cd";
+  $("lblClass").textContent = specialist ? "Lớp học chuyên đề" : "Lớp dạy";
+  $("inpLop").placeholder = specialist ? "VD: 10A1 - Chuyên đề" : "10A1";
+  $("txtYccd").value = currentLesson.ycc;
+  renderNlsTiles();
+  $("topTitle").textContent = currentLesson.bai.replace(/^Bài \d+\.\s*/,"");
+  $("topSub").textContent = currentLesson.chuong;
+  scheduleDraftSave();
+}
+function renderNlsTiles(){
+  const allCodes = Object.keys(MIEN_INFO);
+  $("nlsTiles").innerHTML = allCodes.map(code => {
+    const active = currentLesson.mien.includes(code);
+    return `<div class="nls-tile ${active?'active':''}" title="${esc(MIEN_INFO[code].ten)}">
+      <span class="num">${MIEN_INFO[code].num}</span><span class="sym">${code}</span>
+    </div>`;
+  }).join("");
+  const mienNames = currentLesson.mien.map(c => MIEN_INFO[c].ten).join(" · ");
+  $("nlsMeta").innerHTML = `
+    ${currentLesson.demuc ? `<div><b>Đề mục SGK:</b> ${esc(currentLesson.demuc.replace(/ \| /g, ' → '))}</div>` : ''}
+    <div><b>Miền:</b> ${esc(mienNames)}</div>
+    <div><b>Công cụ:</b> ${esc(currentLesson.congcu)}</div>
+    <div><b>Hoạt động gợi ý:</b> ${esc(currentLesson.hoatdong)}</div>
+    <div><b>Sản phẩm:</b> ${esc(currentLesson.sanpham)}</div>
+  `;
+  renderNlsIndicators();
+}
+function renderNlsIndicators(){
+  const items = [];
+  currentLesson.mien.forEach(code => {
+    const dom = NLS_DESCRIPTORS[code];
+    if(!dom) return;
+    dom.items.forEach(it => items.push(it));
+  });
+  $("nlsIndicators").innerHTML = items.map(it => `
+    <div class="ind-item">
+      <div class="ind-head"><span class="ind-code">${esc(it.code)}</span><span class="ind-ten">${esc(it.ten)}</span></div>
+      <ul>${it.yccd.map(y => `<li>${esc(y)}</li>`).join("")}</ul>
+    </div>
+  `).join("") + `<div class="nls-indicators-note">Mức "Nâng cao 1" (lớp 10-12) — tổng hợp, diễn giải từ Phụ lục Khung NLS kèm Công văn 3456/BGDĐT-GDPT. Vui lòng đối chiếu văn bản gốc khi cần.</div>`;
+}
+function esc(s){ return (s||"").replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
+
+$("selSource").addEventListener("change", populateChuong);
+$("selGrade").addEventListener("change", () => { refreshGradeLabels(); populateChuong(); scheduleDraftSave(); });
+$("selChuong").addEventListener("change", populateBai);
+$("selBai").addEventListener("change", selectLesson);
+$("btnToggleInd").addEventListener("click", () => {
+  const box = $("nlsIndicators");
+  const open = box.classList.toggle("open");
+  $("indToggleIcon").textContent = open ? "▴" : "▾";
+});
+
+refreshGradeLabels();
+populateChuong();
+
+/* ======================================================================
+   PAPER RENDERING
+   ====================================================================== */
+function buildPaperSkeleton(){
+  const l = currentLesson;
+  const specialist = $("selSource").value === "cd";
+  const planTitle = specialist ? "KẾ HOẠCH BÀI DẠY CHUYÊN ĐỀ" : "KẾ HOẠCH BÀI DẠY";
+  const lop = $("inpLop").value || "……………";
+  const tiet = $("inpTiet").value || "…";
+  const ngay = $("inpNgay").value || "……/……/………";
+  $("paper").innerHTML = `
+    <div class="paper-tools"><span class="chip">Có thể sửa trực tiếp từng phần</span><span class="chip">Tự lưu bản nháp</span></div>
+    <h3 class="title">${planTitle}</h3>
+    <div class="school-line">${specialist ? `Chuyên đề học tập Hóa học ${activeGrade()}` : `Môn: Hóa học ${activeGrade()}`} &nbsp;·&nbsp; ${esc(l.bai)}</div>
+    <div class="meta-grid">
+      <div>Lớp dạy: ${esc(lop)}</div><div>Số tiết: ${esc(tiet)}</div>
+      <div>Ngày soạn: ${esc(ngay)}</div><div>${esc(l.chuong)}</div>
+    </div>
+    <div class="sec-h roman">I. MỤC TIÊU</div>
+    <div class="section-body" contenteditable="true" id="sec-mucTieu" data-placeholder="Đang chờ tạo nội dung…"></div>
+
+    <div class="sec-h roman">II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</div>
+    <div class="section-body" contenteditable="true" id="sec-thietBi" data-placeholder="Đang chờ tạo nội dung…"></div>
+
+    <div class="sec-h roman">III. TIẾN TRÌNH DẠY HỌC</div>
+
+    <div class="sub-h">Hoạt động 1: Khởi động</div>
+    <div class="section-body" contenteditable="true" id="sec-hd1" data-placeholder="Đang chờ tạo nội dung…"></div>
+
+    <div class="sub-h">Hoạt động 2: Hình thành kiến thức</div>
+    <div class="section-body" contenteditable="true" id="sec-hd2" data-placeholder="Đang chờ tạo nội dung…"></div>
+
+    <div class="sub-h">Hoạt động 3: Luyện tập</div>
+    <div class="section-body" contenteditable="true" id="sec-hd3" data-placeholder="Đang chờ tạo nội dung…"></div>
+
+    <div class="sub-h">Hoạt động 4: Vận dụng (tích hợp năng lực số)</div>
+    <div class="section-body" contenteditable="true" id="sec-hd4" data-placeholder="Đang chờ tạo nội dung…"></div>
+  `;
+}
+
+/* ======================================================================
+   AI GENERATION
+   ====================================================================== */
+const TABLE_OUTPUT_RULE = ` QUY ĐỊNH ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC): chỉ trả về DUY NHẤT mã HTML, bắt đầu ngay từ ký tự đầu tiên bằng <table class="khbd-table">, không thêm chữ giải thích, lời dẫn hay markdown nào trước hoặc sau bảng. Cấu trúc đúng như sau: <table class="khbd-table"><thead><tr><th>Hoạt động của GV và HS</th><th>Sản phẩm dự kiến</th><th>Năng lực số (NLS)</th></tr></thead><tbody><tr><td>...</td><td>...</td><td>...</td></tr></tbody></table>. BẮT BUỘC điền đầy đủ nội dung cho CẢ 3 CỘT của MỌI dòng — tuyệt đối không để cột Sản phẩm dự kiến hoặc Năng lực số (NLS) trống hoặc bỏ dở; viết ngắn gọn, súc tích để đảm bảo hoàn chỉnh hết bảng (kết thúc bằng đúng thẻ </table>) trong giới hạn độ dài cho phép. Trong nội dung mỗi <td>, nếu có nhiều dòng/bước thì nối các dòng bằng thẻ <br> (không dùng \\n, không dùng <li>/<ul>). Cột Năng lực số (NLS) ghi mỗi mã trong một thẻ <span class="nls-badge">mã</span>, nhiều mã nối nhau bằng <br>.`;
+const SECTIONS = [
+  { key:"mucTieu", label:"Mục tiêu",
+    ask:`Soạn phần "I. MỤC TIÊU" của KHBD. Trình bày theo 4 mục: 1. Kiến thức; 2. Năng lực, gồm 2.1. Năng lực chung, 2.2. Năng lực hoá học, 2.3. Năng lực số; 3. Phẩm chất. Ở mục 2.3 phải nêu rõ mã chỉ báo NLS dạng x.y.NC1a/b và biểu hiện cụ thể gắn với bài học, không chỉ nêu tên miền. Dùng dấu "- " đầu dòng, không dùng markdown (không **, không #). CHỈ trả về văn bản thuần (không dùng thẻ HTML).` },
+  { key:"thietBi", label:"Thiết bị dạy học và học liệu",
+    ask:`Soạn phần "II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU". Liệt kê: a) Đối với giáo viên (thiết bị, học liệu, kể cả công cụ số nêu ở phần gợi ý NLS), b) Đối với học sinh. Dùng dấu "- " đầu dòng, không dùng markdown. CHỈ trả về văn bản thuần (không dùng thẻ HTML).` },
+  { key:"hd1", label:"Hoạt động 1 (Khởi động)",
+    ask:`Soạn "Hoạt động 1: Khởi động" theo mẫu KHBD có tích hợp NLS. Trình bày thành bảng 3 cột với tiêu đề đúng: Hoạt động của GV và HS | Sản phẩm dự kiến | Năng lực số (NLS). Cột 1 phải có đủ các bước: Giao nhiệm vụ học tập; Thực hiện nhiệm vụ; Báo cáo, thảo luận; Kết luận, nhận định. Cột 3 ghi mã chỉ báo NLS dạng x.y.NC1a/b phù hợp, không chỉ ghi tên miền. Không dùng markdown.${TABLE_OUTPUT_RULE}` },
+  { key:"hd2", label:"Hoạt động 2 (Hình thành kiến thức)",
+    ask:`Soạn "Hoạt động 2: Hình thành kiến thức mới" theo mẫu KHBD có tích hợp NLS. Với mỗi đề mục SGK đã cung cấp, tạo một bảng 3 cột: Hoạt động của GV và HS | Sản phẩm dự kiến | Năng lực số (NLS). Cột 1 phải triển khai theo các bước Giao nhiệm vụ học tập; Thực hiện nhiệm vụ; Báo cáo, thảo luận; Kết luận, nhận định. Cột 2 ghi kiến thức/sản phẩm dự kiến sát yêu cầu cần đạt. Cột 3 ghi mã chỉ báo NLS dạng x.y.NC1a/b phù hợp với nhiệm vụ số. Không dùng markdown. Nếu có nhiều đề mục SGK, tạo nhiều bảng <table class="khbd-table"> liên tiếp nhau, mỗi bảng có một <h4> ngắn ngay trước nó nêu tên đề mục.${TABLE_OUTPUT_RULE}` },
+  { key:"hd3", label:"Hoạt động 3 (Luyện tập)",
+    ask:`Soạn "Hoạt động 3: Luyện tập" theo mẫu KHBD có tích hợp NLS. Trình bày thành bảng 3 cột: Hoạt động của GV và HS | Sản phẩm dự kiến | Năng lực số (NLS). Nội dung có 2-3 câu hỏi/bài tập phù hợp khối lớp đang chọn. Cột NLS ghi mã chỉ báo dạng x.y.NC1a/b nếu có dùng trò chơi, phiếu số, bảng tính, kiểm chứng kết quả hoặc chia sẻ sản phẩm. Không dùng markdown.${TABLE_OUTPUT_RULE}` },
+  { key:"hd4", label:"Hoạt động 4 (Vận dụng, tích hợp NLS)",
+    ask:`Soạn "Hoạt động 4: Vận dụng" theo mẫu KHBD có tích hợp NLS. Trình bày thành bảng 3 cột: Hoạt động của GV và HS | Sản phẩm dự kiến | Năng lực số (NLS). Đây là hoạt động chính để HS thực hiện nhiệm vụ số đã gợi ý; cột NLS phải ghi mã chỉ báo dạng x.y.NC1a/b và tiêu chí đánh giá sản phẩm số ngắn gọn. Không dùng markdown.${TABLE_OUTPUT_RULE}` },
+];
+
+function buildSystemPrompt(){
+  return `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Hoá học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ hoá học phổ thông. Không dùng markdown (không in đậm **, không tiêu đề #). Học sinh lớp ${activeGrade()} tương ứng mức "Nâng cao 1" trong Khung năng lực số (Thông tư 02/2025/TT-BGDĐT, cụ thể hoá tại Phụ lục kèm Công văn 3456/BGDĐT-GDPT): các em xử lý nhiệm vụ/vấn đề đa dạng, có thể tự chủ và hướng dẫn người khác. Khi tích hợp năng lực số, chỉ tích hợp tự nhiên, lồng ghép vào đúng "địa chỉ" của bài học (không thêm hoạt động lan man ngoài nội dung), và phải bám sát các yêu cầu cần đạt (chỉ báo) của từng năng lực thành phần được cung cấp trong ngữ cảnh — không chỉ nêu tên miền chung. Luôn tuân thủ ĐÚNG định dạng đầu ra được yêu cầu trong từng câu hỏi cụ thể (văn bản thuần hoặc mã HTML <table>) và luôn viết đầy đủ, hoàn chỉnh hết bảng/nội dung được yêu cầu — đây là yêu cầu kỹ thuật bắt buộc để hệ thống hiển thị đúng, không được thêm, bớt định dạng hoặc bỏ dở giữa bảng.`;
+}
+
+function buildNlsIndicatorsText(){
+  const lines = [];
+  currentLesson.mien.forEach(code => {
+    const dom = NLS_DESCRIPTORS[code];
+    if(!dom) return;
+    dom.items.forEach(it => {
+      lines.push(`[${it.code}] ${it.ten}:`);
+      it.yccd.forEach(y => lines.push(`   - ${y}`));
+    });
+  });
+  return lines.join("\n");
+}
+
+function sgvGuideForLesson(lesson=currentLesson){
+  const text = `${lesson?.chuong || ""} ${lesson?.bai || ""} ${lesson?.demuc || ""}`.toLowerCase();
+  const grade = activeGrade();
+  const isReview = /ôn tập|luyện tập/.test(text);
+  const isExperiment = /thực hành|thí nghiệm|điều chế|tách|tinh chế|nhận biết|điện phân|pin điện|chuẩn độ/.test(text);
+  const isOrganic = /hữu cơ|hydrocarbon|alkane|alkene|alkyne|arene|alcohol|phenol|carbonyl|carboxylic|ester|lipid|amine|amino|protein|polymer|carbohydrate|glucose|saccharose|tinh bột|cellulose/.test(text);
+  const isEquilibrium = /cân bằng|acid|base|ph|dung dịch/.test(text);
+  const isInorganic = /nitrogen|sulfur|halogen|kim loại|nguyên tử|bảng tuần hoàn|liên kết|phức chất|oxide|ammonia|sulfate/.test(text);
+  const isContext = /môi trường|phân bón|dầu mỏ|cháy|nổ|ăn mòn|vật liệu|xà phòng|enzyme/.test(text);
+  const guide = {
+    source: `SGV Hóa học ${grade} - dùng như định hướng thiết kế hoạt động, thiết bị và đánh giá.`,
+    focus: "Tổ chức hoạt động theo mạch: khởi động nêu vấn đề - hình thành kiến thức qua nhiệm vụ - luyện tập củng cố - vận dụng gắn thực tiễn.",
+    devices: ["SGV/SGK Hóa học " + grade, "phiếu học tập", "bảng tiêu chí đánh giá", "máy chiếu hoặc màn hình trình chiếu"],
+    methods: ["đàm thoại gợi mở", "hoạt động nhóm nhỏ", "báo cáo - thảo luận - chuẩn hóa kiến thức"],
+    assessment: ["quan sát quá trình học tập", "sản phẩm phiếu học tập", "câu trả lời/bài tập vận dụng"]
+  };
+  if(isExperiment){
+    guide.focus = "Ưu tiên tổ chức quan sát/thực hành thí nghiệm an toàn, dự đoán hiện tượng, ghi dữ liệu, giải thích và rút kết luận.";
+    guide.devices.push("dụng cụ - hóa chất thí nghiệm theo điều kiện phòng bộ môn", "video/mô phỏng thí nghiệm thay thế khi không đủ điều kiện", "bảng kiểm an toàn thí nghiệm");
+    guide.methods.push("dự đoán - kiểm chứng", "thực hành theo nhóm", "phân tích hiện tượng và xử lí dữ liệu");
+    guide.assessment.push("bảng quan sát thao tác thí nghiệm", "báo cáo thực hành ngắn");
+  }
+  if(isOrganic){
+    guide.devices.push("mô hình phân tử hoặc phần mềm vẽ công thức cấu tạo", "bộ thẻ công thức - danh pháp - tính chất", "mẫu vật/hình ảnh ứng dụng hợp chất hữu cơ");
+    guide.methods.push("so sánh cấu tạo - tính chất", "phân loại và gọi tên", "liên hệ ứng dụng trong đời sống/sản xuất");
+    guide.assessment.push("bài tập nhận diện nhóm chức/công thức", "sản phẩm sơ đồ hóa mối liên hệ cấu tạo - tính chất");
+  }
+  if(isEquilibrium){
+    guide.devices.push("bảng số liệu/đồ thị cân bằng", "mô phỏng hoặc thí nghiệm minh họa ảnh hưởng nồng độ, nhiệt độ, áp suất", "máy tính cầm tay/bảng tính");
+    guide.methods.push("phân tích dữ liệu", "dự đoán chiều chuyển dịch", "giải bài tập định lượng có kiểm chứng kết quả");
+    guide.assessment.push("phiếu giải thích hiện tượng cân bằng", "bài tập tính toán/nhận xét pH hoặc hằng số cân bằng");
+  }
+  if(isInorganic){
+    guide.devices.push("bảng tuần hoàn", "tranh ảnh/video hiện tượng hóa học", "mẫu chất hoặc mô phỏng an toàn phù hợp");
+    guide.methods.push("khai thác bảng/ sơ đồ", "so sánh quy luật và tính chất", "giải thích hiện tượng bằng cấu tạo");
+    guide.assessment.push("bảng so sánh tính chất", "câu hỏi giải thích hiện tượng hoặc dự đoán phản ứng");
+  }
+  if(isContext){
+    guide.devices.push("tư liệu thực tiễn, số liệu hoặc tình huống địa phương", "video/hình ảnh ứng dụng", "nguồn học liệu số cần kiểm chứng");
+    guide.methods.push("học tập theo tình huống", "dự án mini/sản phẩm truyền thông", "tranh luận giải pháp");
+    guide.assessment.push("sản phẩm vận dụng gắn thực tiễn", "tiêu chí đúng kiến thức - khả thi - có nguồn tin cậy");
+  }
+  if(isReview){
+    guide.focus = "Hệ thống hóa kiến thức, nhận diện lỗi thường gặp, luyện tập phân hóa và tự đánh giá mức độ đạt yêu cầu cần đạt.";
+    guide.devices.push("sơ đồ tư duy/bảng hệ thống hóa", "ngân hàng câu hỏi", "phiếu tự đánh giá");
+    guide.methods.push("trạm học tập", "trò chơi ôn tập", "chữa lỗi điển hình");
+    guide.assessment.push("kết quả tự đánh giá", "bài luyện tập phân hóa");
+  }
+  return guide;
+}
+
+function sgvGuideText(guide=sgvGuideForLesson()){
+  return `- Nguồn định hướng: ${guide.source}
+- Trọng tâm tổ chức: ${guide.focus}
+- Thiết bị/học liệu nên ưu tiên: ${guide.devices.join("; ")}
+- Phương pháp/kĩ thuật phù hợp: ${guide.methods.join("; ")}
+- Minh chứng đánh giá: ${guide.assessment.join("; ")}`;
+}
+
+function buildContextBlock(){
+  const l = currentLesson;
+  const lop = $("inpLop").value || `lớp ${activeGrade()}`;
+  const tiet = $("inpTiet").value || "1";
+  const note = $("inpNote").value.trim();
+  const ycc = $("txtYccd").value.trim();
+  const mienNames = l.mien.map(c => `${c} - ${MIEN_INFO[c].ten}`).join("; ");
+  return `THÔNG TIN BÀI HỌC
+- Môn: Hoá học ${activeGrade()}. ${l.chuong}.
+- Tên bài: ${l.bai}
+- Số tiết: ${tiet}. Lớp dạy: ${lop}.
+- Yêu cầu cần đạt: ${ycc}
+- Đề mục nội dung bài trong SGK: ${l.demuc || "(không có)"}
+
+GỢI Ý TÍCH HỢP NĂNG LỰC SỐ (theo Khung NLS - Thông tư 02/2025/TT-BGDĐT, mức "Nâng cao 1" — lớp 10-12)
+- Miền năng lực số: ${mienNames}
+- Công cụ/nền tảng số gợi ý: ${l.congcu}
+- Hoạt động tích hợp gợi ý: ${l.hoatdong}
+- Sản phẩm số minh chứng gợi ý: ${l.sanpham}
+
+GỢI Ý TỪ SÁCH GIÁO VIÊN
+${sgvGuideText(sgvGuideForLesson(l))}
+
+YÊU CẦU CẦN ĐẠT (CHỈ BÁO) CỦA CÁC NĂNG LỰC THÀNH PHẦN LIÊN QUAN (Phụ lục kèm Công văn 3456/BGDĐT-GDPT, mức Nâng cao 1 - lớp 10-12). Hãy ưu tiên chỉ báo phù hợp nhất với hoạt động tích hợp gợi ý ở trên, không cần dùng hết tất cả:
+${buildNlsIndicatorsText()}
+
+${getPersonalizationBlock()}
+
+YÊU CẦU CHỐNG TRÙNG LẶP GIỮA CÁC GIÁO VIÊN
+- Không sao chép y nguyên một kế hoạch bài dạy mẫu.
+- Giữ nguyên yêu cầu cần đạt, chuẩn kiến thức Hóa học ${activeGrade()}, cấu trúc KHBD và mã NLS phù hợp.
+- Tạo khác biệt ở tình huống khởi động, kĩ thuật tổ chức, câu hỏi luyện tập, nhiệm vụ vận dụng, công cụ số và sản phẩm học tập.
+${note ? "\nGHI CHÚ CỦA GIÁO VIÊN: " + note : ""}`;
+}
+
+
+
+function lessonOutlineTasks(){
+  const raw = (currentLesson.demuc || currentLesson.ycc || currentLesson.bai).split(/\s+\|\s+/).filter(Boolean);
+  return raw.length ? raw : [currentLesson.bai];
+}
+function nlsLine(){
+  const names = currentLesson.mien.map(c => MIEN_INFO[c].ten).join("; ");
+  return `${names}. Công cụ gợi ý: ${currentLesson.congcu}.`;
+}
+
+function nlsItemsForLesson(){
+  const out = [];
+  currentLesson.mien.forEach(code => {
+    const dom = NLS_DESCRIPTORS[code];
+    if(!dom) return;
+    dom.items.forEach((it, idx) => out.push({
+      nlsCode: `${it.code}.NC1${idx % 2 === 0 ? "a" : "b"}`,
+      ten: it.ten,
+      yccd: it.yccd[0] || ""
+    }));
+  });
+  return out;
+}
+function nlsCodes(offset=0, limit=2){
+  const items = nlsItemsForLesson();
+  if(!items.length) return "";
+  const picked = [];
+  for(let i=0; i<Math.min(limit, items.length); i++) picked.push(items[(offset + i) % items.length].nlsCode);
+  return picked.join("; ");
+}
+function nlsGoalText(){
+  return nlsItemsForLesson().slice(0, 5).map(it => `- ${it.nlsCode}: ${it.ten} - ${it.yccd}`).join("\n");
+}
+function linesToHtml(s){ return esc(s).replace(/\n/g, "<br>"); }
+function activityTableHtml(gvhs, product, codes){
+  return `<table class="khbd-table">
+    <thead><tr><th>Hoạt động của GV và HS</th><th>Sản phẩm dự kiến</th><th>Năng lực số (NLS)</th></tr></thead>
+    <tbody><tr><td>${linesToHtml(gvhs)}</td><td>${linesToHtml(product)}</td><td>${codes.split(/;\s*/).filter(Boolean).map(c => `<span class="nls-badge">${esc(c)}</span>`).join("<br>")}</td></tr></tbody>
+  </table>`;
+}
+function buildFallbackSection(key){
+  const l = currentLesson;
+  const ycc = $("txtYccd").value.trim() || l.ycc;
+  const note = $("inpNote").value.trim();
+  const variant = ensureVariant(false);
+  const teacher = $("inpTeacher")?.value.trim();
+  const classProfile = classProfileLabel($("selClassProfile")?.value);
+  const facilities = facilitiesLabel($("selFacilities")?.value);
+  const sgv = sgvGuideForLesson(l);
+  const tasks = lessonOutlineTasks();
+  const taskLines = tasks.map((t, i) => `- Nhiệm vụ ${i + 1}: ${t}. GV giao nhiệm vụ học tập theo định hướng SGV, HS khai thác SGK/học liệu, thảo luận, quan sát hoặc xử lí dữ liệu phù hợp; GV chốt kiến thức, chuẩn hóa thuật ngữ và công thức cần nhớ.`).join("\n");
+  const commonTail = note ? `\n- Điều chỉnh theo ghi chú của GV: ${note}` : "";
+  const hd1Gv = `Giao nhiệm vụ học tập: GV tổ chức mở đầu bằng ${variant.hook} liên quan đến bài "${l.bai}", yêu cầu HS dự đoán và nêu điều cần tìm hiểu.
+Thực hiện nhiệm vụ: HS suy nghĩ cá nhân, trao đổi nhanh theo cặp/nhóm nhỏ; có thể tìm nhanh một thông tin minh chứng nếu GV cho phép.
+Báo cáo, thảo luận: Đại diện HS nêu dự đoán, căn cứ và câu hỏi còn băn khoăn.
+Kết luận, nhận định: GV nhận xét, chốt vấn đề học tập và dẫn dắt vào bài.`;
+  const hd2Gv = `Giao nhiệm vụ học tập: GV chia nhiệm vụ theo các đề mục SGK, sử dụng kĩ thuật ${variant.technique}, phát phiếu học tập và hướng dẫn nguồn học liệu/công cụ số phù hợp.
+Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, phân tích dữ liệu, quan sát thí nghiệm/mô phỏng hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
+Báo cáo, thảo luận: Các nhóm trình bày kết quả; nhóm khác nhận xét, bổ sung, đặt câu hỏi và kiểm chứng thông tin.
+Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh thuật ngữ/công thức trọng tâm.
+${taskLines}`;
+  const hd3Gv = `Giao nhiệm vụ học tập: GV giao câu hỏi/bài tập luyện tập theo cá nhân hoặc nhóm nhỏ.
+Thực hiện nhiệm vụ: HS hoàn thành bài tập, có thể dùng ${variant.digitalTool}, phiếu số hoặc công cụ kiểm tra kết quả theo hướng dẫn.
+Báo cáo, thảo luận: HS trình bày đáp án, giải thích cách làm; các nhóm đối chiếu, nhận xét.
+Kết luận, nhận định: GV chuẩn hóa đáp án, chỉ ra lỗi thường gặp và cách tự kiểm tra kết quả.`;
+  const hd4Gv = `Giao nhiệm vụ học tập: GV giao nhiệm vụ vận dụng có tích hợp năng lực số: ${l.hoatdong}
+Thực hiện nhiệm vụ: HS thực hiện cá nhân/nhóm, thu thập và kiểm chứng thông tin, tạo ${variant.product} bằng công cụ phù hợp.
+Báo cáo, thảo luận: HS nộp/chia sẻ sản phẩm, trình bày nguồn tham khảo và cách kiểm chứng.
+Kết luận, nhận định: GV nhận xét theo tiêu chí: đúng kiến thức hoá học, nguồn đáng tin cậy, trình bày rõ, sử dụng công cụ số an toàn và có trách nhiệm.`;
+  const map = {
+    mucTieu: `1. Kiến thức\n- Trình bày và vận dụng được các nội dung trọng tâm của bài: ${ycc}\n- Liên hệ được kiến thức với hiện tượng, bài tập hoặc tình huống thực tiễn phù hợp với chủ đề "${l.bai}".\n- Bám định hướng SGV: ${sgv.focus}\n\n2. Năng lực\n2.1. Năng lực chung\n- Tự chủ và tự học: Chủ động chuẩn bị bài, khai thác học liệu và hoàn thành nhiệm vụ được giao.\n- Giao tiếp và hợp tác: Thảo luận, trình bày, phản biện kết quả học tập trong nhóm/lớp.\n- Giải quyết vấn đề và sáng tạo: Lựa chọn cách tiếp cận phù hợp để giải quyết nhiệm vụ học tập và tình huống thực tiễn.\n\n2.2. Năng lực hoá học\n- Nhận thức hoá học: Mô tả, giải thích và sử dụng đúng khái niệm, quy luật, công thức trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ hoá học: Quan sát, phân tích dữ liệu, thí nghiệm hoặc mô phỏng để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống gắn với nội dung bài học.\n\n2.3. Năng lực số tích hợp\n${nlsGoalText()}\n\n3. Phẩm chất\n- Phù hợp với ${classProfile}; điều kiện tổ chức: ${facilities}.\n- Chăm chỉ trong chuẩn bị bài, ghi chép và hoàn thành nhiệm vụ học tập.\n- Trung thực khi xử lí dữ liệu, trích dẫn nguồn và báo cáo kết quả.\n- Trách nhiệm khi hợp tác nhóm, sử dụng thiết bị và công cụ số an toàn.${commonTail}`,
+    thietBi: `a) Đối với giáo viên\n- SGV và SGK Hóa học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video/thí nghiệm/mô phỏng phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn khi sử dụng hóa chất, dụng cụ và thiết bị số.\n\nb) Đối với học sinh\n- SGK Hóa học ${activeGrade()}, vở ghi, máy tính cầm tay nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`,
+    hd1: activityTableHtml(hd1Gv, `- Câu trả lời/dự đoán ban đầu của HS.\n- Vấn đề học tập cần giải quyết trong bài "${l.bai}".`, nlsCodes(0, 2)),
+    hd2: activityTableHtml(hd2Gv, `- Phiếu học tập hoặc vở ghi hoàn thiện theo từng đề mục.\n- Kết luận kiến thức chính bám sát yêu cầu cần đạt: ${ycc}\n- Minh chứng khai thác/kiểm chứng học liệu số nếu có.`, nlsCodes(1, 3)),
+    hd3: activityTableHtml(hd3Gv, `- Bài làm/câu trả lời của HS.\n- 2-3 câu hỏi/bài tập mẫu đã được chữa và tự đánh giá.\n- Kết quả đối chiếu, sửa lỗi sau nhận xét của GV.`, nlsCodes(2, 2)),
+    hd4: activityTableHtml(hd4Gv, `- ${l.sanpham}\n- Có ghi nguồn, minh chứng kiểm chứng thông tin và phần tự đánh giá sản phẩm số.`, nlsCodes(3, 2))
+  };
+  map.thietBi = map.thietBi.replace("theo kế hoạch tổ và ", "");
+  return map[key] || "";
+}
+
+
+// Nếu bạn deploy một server trung gian (proxy) giữ API key bí mật ở phía server
+// (xem hướng dẫn đi kèm), điền URL của proxy đó vào đây. Khi đã điền, MỌI giáo
+// viên mở file sẽ dùng chung được tính năng AI mà không cần tự nhập API key,
+// và key thật KHÔNG hề xuất hiện trong file này hay trong trình duyệt của họ.
+// Để trống ("") nếu vẫn muốn dùng cách cũ: mỗi người tự nhập key riêng.
+const AI_PROXY_URL = "https://khbd-nk.onrender.com"; // ví dụ: "https://khbd-proxy.ten-ban.workers.dev"
+// Nếu bạn đặt APP_SHARED_SECRET ở phía Worker (bước 6 trong file proxy), điền
+// đúng chuỗi đó vào đây để app được phép gọi qua proxy. Để trống nếu Worker
+// không bật kiểm tra mã này.
+const APP_SHARED_SECRET = "";
+
+async function callClaude(sectionAsk){
+  const body = {
+    model: "claude-sonnet-4-6",
+    max_tokens: 4096,
+    system: buildSystemPrompt(),
+    messages: [
+      { role: "user", content: buildContextBlock() + "\n\nYÊU CẦU SOẠN PHẦN NÀY:\n" + sectionAsk }
+    ],
+  };
+  const apiKey = $("inpApiKey").value.trim();
+  const headers = { "Content-Type": "application/json" };
+  let url = "https://api.anthropic.com/v1/messages";
+  if(AI_PROXY_URL){
+    url = AI_PROXY_URL;
+    if(APP_SHARED_SECRET) headers["X-App-Secret"] = APP_SHARED_SECRET;
+  } else if(apiKey){
+    headers["x-api-key"] = apiKey;
+    headers["anthropic-version"] = "2023-06-01";
+    headers["anthropic-dangerous-direct-browser-access"] = "true";
+  }
+  let res;
+  try{
+    res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+  }catch(networkErr){
+    throw new Error(AI_PROXY_URL
+      ? "Không kết nối được tới máy chủ trung gian (" + AI_PROXY_URL + "). Kiểm tra lại URL hoặc server proxy có đang hoạt động không."
+      : "Không kết nối được tới máy chủ AI. Nếu bạn đang mở file này NGOÀI claude.ai (đã tải file .html về máy / mở độc lập), bạn cần dán API Key của Anthropic vào ô \"API Key\" ở thanh bên rồi thử lại.");
+  }
+  if(!res.ok){
+    const t = await res.text().catch(()=> "");
+    if((res.status === 401 || res.status === 403) && !apiKey && !AI_PROXY_URL){
+      throw new Error("Chưa xác thực được với máy chủ AI (mã " + res.status + "). Tính năng gọi AI trực tiếp chỉ tự hoạt động khi file được mở BÊN TRONG khung Artifact của claude.ai. Nếu bạn đang mở file độc lập (đã tải về máy), hãy dán API Key Anthropic của bạn vào ô \"API Key\" ở thanh bên rồi bấm lại.");
+    }
+    throw new Error("Lỗi gọi mô hình (" + res.status + "). " + t.slice(0,200));
+  }
+  const data = await res.json();
+  const text = (data.content || [])
+    .filter(b => b.type === "text")
+    .map(b => b.text)
+    .join("\n")
+    .trim();
+  if(!text) throw new Error("Không nhận được nội dung trả về.");
+  return text;
+}
+
+async function fillSections({ offline=false, variant=false } = {}){
+  if(variant){ variationRun += 1; ensureVariant(true); } else { ensureVariant(false); }
+  if(!currentLesson) return;
+  let useFallback = offline;
+  let fallbackNotice = "";
+  const btn = variant ? $("btnGenerateVariant") : (offline ? $("btnGenerateSample") : $("btnGenerate"));
+  const otherBtn = offline ? $("btnGenerate") : $("btnGenerateSample");
+  const variantBtn = $("btnGenerateVariant");
+  btn.disabled = true;
+  otherBtn.disabled = true;
+  if(variantBtn) variantBtn.disabled = true;
+  $("errorWrap").innerHTML = "";
+  $("progressWrap").style.display = "block";
+  buildPaperSkeleton();
+
+  for(let i=0;i<SECTIONS.length;i++){
+    const sec = SECTIONS[i];
+    const el = document.getElementById("sec-" + sec.key);
+    el.classList.add("loading");
+    el.textContent = "Đang soạn “" + sec.label + "”…";
+    $("progressFill").style.width = Math.round((i / SECTIONS.length) * 100) + "%";
+    $("progressText").textContent = "Đang tạo phần " + (i+1) + "/" + SECTIONS.length + ": " + sec.label;
+    try{
+      let text = useFallback ? buildFallbackSection(sec.key) : await callClaude(sec.ask);
+      if(!useFallback){
+        text = text.trim().replace(/^```(?:html)?\s*/i, "").replace(/```\s*$/i, "").trim();
+      }
+      el.classList.remove("loading");
+      if(/^\s*</.test(text)) el.innerHTML = text;
+      else el.textContent = text;
+      scheduleDraftSave();
+      if(useFallback) await wait(80);
+    }catch(err){
+      el.classList.remove("loading");
+      useFallback = true;
+      fallbackNotice = err.message;
+      const fallbackText = buildFallbackSection(sec.key);
+      if(/^\s*</.test(fallbackText)) el.innerHTML = fallbackText;
+      else el.textContent = fallbackText;
+      $("errorWrap").innerHTML = `<div class="error-box">⚠ Không kết nối được AI ở phần ${esc(sec.label)}. Ứng dụng đã hoàn tất bản nháp theo Kế hoạch Tổ để bạn tiếp tục chỉnh sửa. ${esc(err.message)}</div>`;
+    }
+  }
+  $("progressFill").style.width = "100%";
+  $("progressText").textContent = variant
+    ? "Đã tạo phiên bản khác. Bạn có thể chỉnh sửa trực tiếp trên bản soạn."
+    : (useFallback
+      ? (fallbackNotice ? "Đã hoàn tất bản nháp theo Kế hoạch Tổ khi AI chưa sẵn sàng. Bạn có thể chỉnh sửa trực tiếp trên bản soạn." : "Đã tạo bản mẫu. Bạn có thể chỉnh sửa trực tiếp trên bản soạn.")
+      : "Hoàn tất. Bạn có thể chỉnh sửa trực tiếp trên bản soạn.");
+  btn.disabled = false;
+  otherBtn.disabled = false;
+  if(variantBtn) variantBtn.disabled = false;
+  saveDraft(false);
+  setTimeout(()=>{ $("progressWrap").style.display = "none"; }, 2500);
+}
+
+function wait(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+function generateAll(){
+  if(!AI_PROXY_URL && !$("inpApiKey").value.trim()){
+    showToast("Chưa có API key: ứng dụng sẽ tạo bản nháp theo Kế hoạch Tổ. Nhập API key để soạn bằng AI trực tiếp.");
+    return fillSections({ offline:true });
+  }
+  return fillSections({ offline:false });
+}
+function generateSample(){ return fillSections({ offline:true }); }
+function generateVariant(){ return fillSections({ offline:true, variant:true }); }
+
+$("btnGenerate").addEventListener("click", generateAll);
+$("btnGenerateSample").addEventListener("click", generateSample);
+$("btnGenerateVariant").addEventListener("click", generateVariant);
+
+function setWorkspace(deptMode){
+  if(!$("deptDistribution")) $("deptPaper").innerHTML = DEPT_TEMPLATE;
+  document.body.classList.toggle("dept-mode", deptMode);
+  $("deptCanvas").classList.toggle("open", deptMode);
+  $("paper").closest(".canvas-wrap").style.display = deptMode ? "none" : "flex";
+  $("btnBackLesson").style.display = deptMode ? "flex" : "none";
+  $("btnSaveDept").style.display = deptMode ? "flex" : "none";
+  $("btnDownloadDept").style.display = deptMode ? "flex" : "none";
+  $("btnDownloadDeptPdf").style.display = deptMode ? "flex" : "none";
+  ["btnCopy","btnDownload","btnDownloadPdf"].forEach(id => { $(id).style.display = deptMode ? "none" : "flex"; });
+  if(deptMode){
+    $("topTitle").textContent = "Kế hoạch dạy học của Tổ chuyên môn";
+    $("topSub").textContent = `Hồ sơ riêng cho toàn bộ chương trình Hóa học ${activeGrade()}`;
+    if(!$("deptDistribution").querySelector("tbody").children.length && !loadDeptPlan(false)) createDeptPlan();
+  }else if(currentLesson){
+    $("topTitle").textContent = currentLesson.bai.replace(/^Bài \d+\.\s*/,"");
+    $("topSub").textContent = currentLesson.chuong;
+  }
+}
+$("btnOpenDept").addEventListener("click", () => setWorkspace(true));
+$("btnBackLesson").addEventListener("click", () => setWorkspace(false));
+$("btnGenerateDept").addEventListener("click", createDeptPlan);
+
+
+
+/* ======================================================================
+   DRAFTS, PRINTING & SMALL UX HELPERS
+   ====================================================================== */
+function collectDraft(){
+  return {
+    savedAt: new Date().toISOString(),
+    grade: $("selGrade").value,
+    source: $("selSource").value,
+    chuong: $("selChuong").value,
+    baiIndex: $("selBai").value,
+    yccd: $("txtYccd").value,
+    lop: $("inpLop").value,
+    tiet: $("inpTiet").value,
+    ngay: $("inpNgay").value,
+    note: $("inpNote").value,
+    teacher: $("inpTeacher")?.value || "",
+    classProfile: $("selClassProfile")?.value || "mixed",
+    facilities: $("selFacilities")?.value || "standard",
+    variation: $("selVariation")?.value || "medium",
+    deptPlan: $("txtDeptPlan")?.value || "",
+    deptName: $("inpDeptName")?.value || "",
+    schoolYear: $("inpSchoolYear")?.value || "",
+    paperHtml: $("paper").innerHTML
+  };
+}
+function saveDraft(show=true){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectDraft()));
+    const stamp = new Date().toLocaleTimeString("vi-VN", { hour:"2-digit", minute:"2-digit" });
+    $("draftStatus").textContent = "Đã lưu nháp lúc " + stamp + ".";
+    if(show) showToast("Đã lưu bản nháp.");
+  }catch(e){
+    showToast("Không lưu được bản nháp trên trình duyệt này.");
+  }
+}
+function scheduleDraftSave(){
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => saveDraft(false), 700);
+}
+function scheduleDeptSave(){
+  clearTimeout(scheduleDeptSave._timer);
+  scheduleDeptSave._timer = setTimeout(() => saveDeptPlan(false), 700);
+}
+function loadDraft(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw){ showToast("Chưa có bản nháp đã lưu."); return; }
+  try{
+    const d = JSON.parse(raw);
+    $("selGrade").value = d.grade || "10";
+    refreshGradeLabels();
+    $("selSource").value = d.source || "sgk";
+    populateChuong();
+    if(d.chuong){ $("selChuong").value = d.chuong; populateBai(); }
+    if(d.baiIndex){ $("selBai").value = d.baiIndex; selectLesson(); }
+    $("txtYccd").value = d.yccd || $("txtYccd").value;
+    $("inpLop").value = d.lop || "";
+    $("inpTiet").value = d.tiet || "";
+    $("inpNgay").value = d.ngay || "";
+    $("inpNote").value = d.note || "";
+    if($("inpTeacher")) $("inpTeacher").value = d.teacher || "";
+    if($("selClassProfile")) $("selClassProfile").value = d.classProfile || "mixed";
+    if($("selFacilities")) $("selFacilities").value = d.facilities || "standard";
+    if($("selVariation")) $("selVariation").value = d.variation || "medium";
+    if($("txtDeptPlan")) $("txtDeptPlan").value = d.deptPlan || localStorage.getItem(DEPT_STORAGE_KEY) || "";
+    if($("inpDeptName")) $("inpDeptName").value = d.deptName || "Tổ Hóa học";
+    if($("inpSchoolYear")) $("inpSchoolYear").value = d.schoolYear || "";
+    if(d.paperHtml) $("paper").innerHTML = d.paperHtml;
+    $("draftStatus").textContent = d.savedAt ? "Đã khôi phục bản nháp đã lưu." : "Đã khôi phục bản nháp.";
+    showToast("Đã khôi phục bản nháp.");
+  }catch(e){
+    showToast("Bản nháp bị lỗi, không thể khôi phục.");
+  }
+}
+function showToast(msg){
+  const box = $("toast");
+  box.textContent = msg;
+  box.classList.add("show");
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => box.classList.remove("show"), 2200);
+}
+function initDefaults(){
+  if(!$("inpNgay").value){
+    $("inpNgay").value = new Date().toLocaleDateString("vi-VN");
+  }
+  if(AI_PROXY_URL){
+    const apiField = $("inpApiKey")?.closest(".field");
+    if(apiField) apiField.style.display = "none";
+  }
+}
+["inpLop","inpTiet","inpNgay","inpNote","txtYccd","inpTeacher","txtDeptPlan","inpDeptName","inpSchoolYear"].forEach(id => {
+  const el = $(id);
+  if(el) el.addEventListener("input", scheduleDraftSave);
+});
+$("paper").addEventListener("input", scheduleDraftSave);
+$("deptPaper").addEventListener("input", scheduleDeptSave);
+$("btnSaveDraft").addEventListener("click", () => saveDraft(true));
+$("btnLoadDraft").addEventListener("click", loadDraft);
+["selClassProfile","selFacilities","selVariation"].forEach(id => { const el=$(id); if(el) el.addEventListener("change", scheduleDraftSave); });
+const deptEl = $("txtDeptPlan");
+if(deptEl) deptEl.addEventListener("blur", () => saveDeptPlan(false));
+if($("btnSaveDept")) $("btnSaveDept").addEventListener("click", () => saveDeptPlan(true));
+if($("btnLoadDept")) $("btnLoadDept").addEventListener("click", () => loadDeptPlan(true));
+if($("btnCreateDept")) $("btnCreateDept").addEventListener("click", createDeptPlan);
+$("btnPrint").addEventListener("click", () => window.print());
+loadDeptPlan(false);
+initDefaults();
+
+/* ======================================================================
+   EXPORT: copy & download .doc
+   ====================================================================== */
+function getSectionText(id){
+  const el = document.getElementById(id);
+  return el ? el.textContent.trim() : "";
+}
+function getSectionHtml(id){
+  const el = document.getElementById(id);
+  return el ? el.innerHTML.trim() : "";
+}
+function assembleDocument(){
+  if(!currentLesson) return null;
+  const l = currentLesson;
+  const lop = $("inpLop").value || "……………";
+  const tiet = $("inpTiet").value || "…";
+  const ngay = $("inpNgay").value || "……/……/………";
+  return {
+    title: $("selSource").value === "cd" ? "KẾ HOẠCH BÀI DẠY CHUYÊN ĐỀ" : "KẾ HOẠCH BÀI DẠY",
+    grade: activeGrade(), specialist: $("selSource").value === "cd",
+    bai: l.bai, chuong: l.chuong, lop, tiet, ngay,
+    mucTieu: getSectionText("sec-mucTieu"),
+    thietBi: getSectionText("sec-thietBi"),
+    hd1: getSectionText("sec-hd1"),
+    hd2: getSectionText("sec-hd2"),
+    hd3: getSectionText("sec-hd3"),
+    hd4: getSectionText("sec-hd4"),
+    mucTieuHtml: getSectionHtml("sec-mucTieu"),
+    thietBiHtml: getSectionHtml("sec-thietBi"),
+    hd1Html: getSectionHtml("sec-hd1"),
+    hd2Html: getSectionHtml("sec-hd2"),
+    hd3Html: getSectionHtml("sec-hd3"),
+    hd4Html: getSectionHtml("sec-hd4"),
+  };
+}
+function plainText(d){
+  return [
+    d.title, `Môn: Hoá học ${d.grade} — ${d.bai}`, d.chuong,
+    "Lớp dạy: " + d.lop + "   Số tiết: " + d.tiet + "   Ngày soạn: " + d.ngay,
+    "", "I. MỤC TIÊU", d.mucTieu,
+    "", "II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU", d.thietBi,
+    "", "III. TIẾN TRÌNH DẠY HỌC",
+    "", "Hoạt động 1: Khởi động", d.hd1,
+    "", "Hoạt động 2: Hình thành kiến thức", d.hd2,
+    "", "Hoạt động 3: Luyện tập", d.hd3,
+    "", "Hoạt động 4: Vận dụng (tích hợp năng lực số)", d.hd4,
+  ].join("\n");
+}
+function htmlDoc(d){
+  const clean = (h)=> (h || "").replace(/contenteditable="true"/g, "");
+  const para = (h)=> clean(h).replace(/\n/g, "<br>");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8">
+  <style>
+    @page{size:A4 landscape;margin:1.1cm 1.5cm 1.1cm 2.5cm;}
+    body{font-family:'Times New Roman',serif;font-size:12pt;color:#111;line-height:1.35;text-align:left;}
+    h2{text-align:center;margin:0 0 6pt;font-size:13pt;} h3{margin:12pt 0 6pt;font-size:12pt;} h4{margin:10pt 0 5pt;font-size:12pt;}
+    table{width:100%;border-collapse:collapse;margin:6pt 0 10pt;font-size:12pt;table-layout:fixed;}
+    th,td{border:1px solid #777;padding:6pt;vertical-align:top;text-align:left;word-wrap:break-word;}
+    th{font-weight:bold;text-align:center;background:#eee;}
+    .paper-tools,.chip{display:none;}
+    .nls-badge{display:inline;}
+  </style></head>
+  <body>
+  <h2>${esc(d.title)}</h2>
+  <p style="text-align:center;">Môn: Hoá học ${esc(d.grade)} - ${esc(d.bai)}<br>${esc(d.chuong)}</p>
+  <p>Lớp dạy: ${esc(d.lop)} &nbsp;&nbsp; Số tiết: ${esc(d.tiet)} &nbsp;&nbsp; Ngày soạn: ${esc(d.ngay)}</p>
+  <h3>I. MỤC TIÊU</h3><div>${para(d.mucTieuHtml)}</div>
+  <h3>II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</h3><div>${para(d.thietBiHtml)}</div>
+  <h3>III. TIẾN TRÌNH DẠY HỌC</h3>
+  <h4>Hoạt động 1: Khởi động</h4><div>${para(d.hd1Html)}</div>
+  <h4>Hoạt động 2: Hình thành kiến thức</h4><div>${para(d.hd2Html)}</div>
+  <h4>Hoạt động 3: Luyện tập</h4><div>${para(d.hd3Html)}</div>
+  <h4>Hoạt động 4: Vận dụng (tích hợp năng lực số)</h4><div>${para(d.hd4Html)}</div>
+  </body></html>`;
+}
+
+
+$("btnCopy").addEventListener("click", async () => {
+  const d = assembleDocument();
+  if(!d) return;
+  try{
+    await navigator.clipboard.writeText(plainText(d));
+    flashTop("Đã sao chép vào clipboard.");
+    showToast("Đã sao chép nội dung.");
+  }catch(e){ flashTop("Không sao chép được — vui lòng chọn và copy thủ công."); }
+});
+async function downloadTeacherDocx(){
+  const d = assembleDocument();
+  if(!d) return;
+  downloadWordHtml(teacherExportHtml(d, true), `Ke-hoach-bai-day-Hoa-hoc-${d.grade}.doc`);
+  showToast("Đã tạo file Word .doc.");
+}
+function wordCss(){
+  return `<style>
+    @page{size:A4 landscape;margin:1.1cm 1.5cm 1.1cm 2.5cm;}
+    body,p,div,td,li,h3,h4{text-align:left!important;text-justify:none!important;}
+    body{font-family:"Times New Roman",serif;font-size:12pt;color:#111;line-height:1.35;}
+    h2{text-align:center!important;margin:0 0 6pt;font-size:13pt;line-height:1.25;} h3{margin:11pt 0 5pt;font-size:12pt;line-height:1.25;} h4{margin:9pt 0 5pt;font-size:12pt;line-height:1.25;}
+    p,div{line-height:1.35;}
+    .section-body p{margin:0 0 4pt 0;}
+    table{width:100%;border-collapse:collapse;margin:6pt 0 10pt;font-family:"Times New Roman",serif;font-size:12pt;table-layout:fixed;line-height:1.25;}
+    th,td{border:1px solid #555;padding:5pt;vertical-align:top;word-wrap:break-word;} th{font-weight:bold;text-align:center!important;background:#eee;}
+    .khbd-table th:nth-child(1),.khbd-table td:nth-child(1){width:46%;}
+    .khbd-table th:nth-child(2),.khbd-table td:nth-child(2){width:34%;}
+    .khbd-table th:nth-child(3),.khbd-table td:nth-child(3){width:20%;}
+    .letterhead-table,.signature-table{width:100%;border-collapse:collapse;table-layout:fixed;border:none;margin:0 0 16pt;font-size:12.5pt;}
+    .letterhead-table td,.signature-table td{width:50%;border:none!important;padding:0 14pt;text-align:center!important;vertical-align:top;}
+    .letterhead-table p{margin:0 0 2pt;}
+    .letterhead-table div,.signature-table div{text-align:center!important;}
+    .meta-line{text-align:center!important;}
+    .lesson-info{text-align:left!important;}
+    .khbd-table td p,.khbd-table div,.khbd-table p{margin:0 0 4pt 0;}
+    .signature-table{margin-top:34pt;page-break-inside:avoid;}
+    .signature-space{height:86pt;line-height:86pt;}
+    .paper-tools,.chip,.dept-tools{display:none!important;}
+  </style>`;
+}
+function fixedSchoolHeaderHtml(){
+  return `<table class="letterhead-table"><tr>
+    <td><p>SỞ GIÁO DỤC VÀ ĐÀO TẠO</p><p>THÀNH PHỐ HỒ CHÍ MINH</p><p><b>TRƯỜNG THCS VÀ THPT NGUYỄN KHUYẾN</b></p><p><b>TỔ HÓA HỌC</b></p></td>
+    <td><p><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b></p><p><b><u>Độc lập - Tự do - Hạnh phúc</u></b></p></td>
+  </tr></table>`;
+}
+function signatureHtml(role="GIÁO VIÊN", approver="TỔ TRƯỞNG CHUYÊN MÔN"){
+  return `<table class="signature-table"><tr>
+    <td><b>DUYỆT CỦA ${approver}</b><div class="signature-space">&nbsp;</div><div>(Ký, ghi rõ họ tên)</div></td>
+    <td><div>Thành phố Hồ Chí Minh, ngày ...... tháng ...... năm 2026</div><b>${role}</b><div class="signature-space">&nbsp;</div><div>(Ký, ghi rõ họ tên)</div></td>
+  </tr></table>`;
+}
+function wrapExportHtml(title, body, landscape=false){
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)}</title>${wordCss()}${landscape ? `<style>@page{size:A4 landscape;margin:1.1cm 1.5cm 1.1cm 2.5cm;}</style>` : ""}</head><body>${body}</body></html>`;
+}
+function teacherExportHtml(d, signed=false){
+  const body = `${fixedSchoolHeaderHtml()}
+  <h2>${esc(d.title)}</h2>
+  <p class="meta-line">${d.specialist ? "Chuyên đề học tập Hóa học" : "Môn: Hóa học"} ${esc(d.grade)} - ${esc(d.bai)}<br>${esc(d.chuong)}</p>
+  <p class="lesson-info">Lớp dạy: ${esc(d.lop)} &nbsp;&nbsp; Số tiết: ${esc(d.tiet)} &nbsp;&nbsp; Ngày soạn: ${esc(d.ngay)}</p>
+  <h3>I. MỤC TIÊU</h3><div>${cleanExportHtml(d.mucTieuHtml)}</div>
+  <h3>II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</h3><div>${cleanExportHtml(d.thietBiHtml)}</div>
+  <h3>III. TIẾN TRÌNH DẠY HỌC</h3>
+  <h4>Hoạt động 1: Khởi động</h4><div>${cleanExportHtml(d.hd1Html)}</div>
+  <h4>Hoạt động 2: Hình thành kiến thức</h4><div>${cleanExportHtml(d.hd2Html)}</div>
+  <h4>Hoạt động 3: Luyện tập</h4><div>${cleanExportHtml(d.hd3Html)}</div>
+  <h4>Hoạt động 4: Vận dụng (tích hợp năng lực số)</h4><div>${cleanExportHtml(d.hd4Html)}</div>
+  ${signed ? signatureHtml("GIÁO VIÊN", "TỔ TRƯỞNG CHUYÊN MÔN") : ""}`;
+  return wrapExportHtml(d.title, body, true);
+}
+// Word (Normal style) thường mặc định canh đều (Justify). Khi nhiều dòng được nối
+// bằng <br> trong CÙNG một đoạn <p>/<div>/<td>, Word áp dụng justify cho MỌI dòng
+// trừ dòng cuối cùng của cả đoạn -> các dòng ngắn (tiêu đề 1-2 từ) bị kéo giãn ra
+// hết chiều ngang trang, đúng như lỗi trong ảnh. Cách fix triệt để: tách mỗi dòng
+// thành một đoạn <p> riêng (kèm text-align:left gắn trực tiếp, không phụ thuộc CSS
+// trong <style> mà Word có thể đọc thiếu) để mỗi dòng luôn là "dòng cuối" của chính
+// đoạn đó -> không bao giờ bị giãn nữa.
+function paragraphizeHtml(html){
+  if(!html || !/<br/i.test(html)) return html;
+  const wrap = document.createElement("div");
+  wrap.innerHTML = html;
+  const pStyle = 'margin:0 0 4pt 0;line-height:1.35;text-align:left;text-justify:none;';
+  function processLeaf(el){
+    if(!/<br/i.test(el.innerHTML)) return;
+    const lines = [];
+    let current = document.createElement("span");
+    Array.from(el.childNodes).forEach(node => {
+      if(node.nodeType === 1 && node.tagName === "BR"){
+        lines.push(current);
+        current = document.createElement("span");
+      } else {
+        current.appendChild(node.cloneNode(true));
+      }
+    });
+    lines.push(current);
+    el.innerHTML = lines
+      .map(s => s.innerHTML.trim())
+      .filter(Boolean)
+      .map(inner => `<p align="left" style="${pStyle}">${inner}</p>`)
+      .join("");
+  }
+  function processContainer(el){
+    if(el.querySelector && el.querySelector("table")){
+      el.querySelectorAll("td").forEach(processLeaf);
+      return;
+    }
+    processLeaf(el);
+  }
+  processContainer(wrap);
+  return wrap.innerHTML;
+}
+function cleanExportHtml(html){
+  const out = (html || "")
+    .replace(/contenteditable="true"/g, "")
+    .replace(/data-placeholder="[^"]*"/g, "")
+    .replace(/\sclass="paper-tools"/g, ' class="paper-tools"')
+    .replace(/\n/g, "<br>");
+  return paragraphizeHtml(out);
+}
+function downloadWordHtml(html, filename){
+  const blob = new Blob(["\ufeff", html], {type:"application/msword;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function printExportHtml(html){
+  const win = window.open("", "_blank");
+  if(!win){
+    showToast("Trình duyệt đang chặn cửa sổ in. Vui lòng cho phép pop-up cho trang này.");
+    return;
+  }
+  const printHtml = html.replace(/<title>[\s\S]*?<\/title>/i, "<title></title>");
+  win.document.open();
+  win.document.write(printHtml);
+  win.document.close();
+  win.document.title = "";
+  win.focus();
+  setTimeout(() => win.print(), 400);
+}
+$("btnDownload").addEventListener("click", () => {
+  downloadTeacherDocx().catch(error => showToast(error.message));
+});
+$("btnDownloadPdf").addEventListener("click", () => {
+  const d = assembleDocument();
+  if(!d) return;
+  printExportHtml(teacherExportHtml(d, true));
+  showToast("Khi lưu PDF, tắt mục Headers and footers để bỏ ngày giờ, URL và số trang.");
+});
+function deptHtmlDoc(){
+  const content = paragraphizeHtml($("deptPaper").innerHTML
+    .replace(/contenteditable="true"/g, "")
+    .replace(/<div class="dept-tools">[\s\S]*?<\/div>/, ""));
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    @page{size:A4 landscape;margin:1.1cm 1.5cm 1.1cm 2.5cm;}
+    body{font-family:'Times New Roman',serif;font-size:12pt;color:#111;line-height:1.35;}
+    body,p,div,td,li{text-align:left!important;}
+    .school-head{display:table;width:100%;margin-bottom:14pt;text-align:center!important;}
+    .school-head>div{display:table-cell;width:50%;vertical-align:top;}
+    .dept-title,.dept-subtitle{text-align:center!important;font-weight:bold;margin:4pt 0;}
+    .dept-title{font-size:15pt;}.dept-subtitle{font-size:13pt;margin-bottom:16pt;}
+    .sec-h{font-weight:bold;font-size:13pt;margin:15pt 0 7pt;}.sub-h{font-weight:bold;margin:10pt 0 5pt;}
+    table{width:100%;border-collapse:collapse;margin:6pt 0 12pt;font-family:'Times New Roman',serif;font-size:12pt;table-layout:fixed;}
+    th,td{border:1px solid #555;padding:4pt;vertical-align:top;word-wrap:break-word;}th{text-align:center!important;background:#eee;font-weight:bold;}
+    .center{text-align:center!important;vertical-align:middle;}
+    .section-body p,td p{margin:0 0 4pt 0;}
+  </style></head><body>${content}</body></html>`;
+}
+function tablePayload(id){
+  const table = $(id);
+  return {
+    headers: [...table.querySelectorAll("thead th")].map(cell => cell.innerText.trim()),
+    rows: [...table.querySelectorAll("tbody tr")].map(row => [...row.cells].map(cell => cell.innerText.trim()))
+  };
+}
+async function downloadDeptDocx(){
+  saveDeptPlan(false);
+  downloadWordHtml(deptExportHtml(true), `Ke-hoach-day-hoc-To-Hoa-hoc-${activeGrade()}.doc`);
+  showToast("Đã tạo file Word .doc Kế hoạch Tổ.");
+}
+function buildDeptExportPayload(){
+  saveDeptPlan(false);
+  return {
+    grade: activeGrade(),
+    title: $("deptPaper").querySelector(".dept-title")?.innerText.trim(),
+    subtitle: $("deptTitle")?.innerText.trim(),
+    situation: $("deptSituation")?.innerText.trim(),
+    other: $("deptOther")?.innerText.trim(),
+    tables: ["deptDevices","deptRooms","deptDistribution","deptTopics","deptAssessments","deptSecondSession"].map(tablePayload)
+  };
+}
+$("btnDownloadDept").addEventListener("click", () => {
+  downloadDeptDocx().catch(error => showToast(error.message));
+});
+$("btnDownloadDeptPdf").addEventListener("click", () => {
+  saveDeptPlan(false);
+  printExportHtml(deptExportHtml(true));
+  showToast("Khi lưu PDF, tắt mục Headers and footers để bỏ ngày giờ, URL và số trang.");
+});
+function deptExportHtml(signed=false){
+  const content = paragraphizeHtml($("deptPaper").innerHTML
+    .replace(/contenteditable="true"/g, "")
+    .replace(/data-placeholder="[^"]*"/g, "")
+    .replace(/<div class="dept-tools">[\s\S]*?<\/div>/, ""));
+  return wrapExportHtml(`Kế hoạch Tổ Hóa học ${activeGrade()}`, `${content}${signed ? signatureHtml("TỔ TRƯỞNG CHUYÊN MÔN", "BAN GIÁM HIỆU") : ""}`, true);
+}
+function flashTop(msg){
+  const sub = $("topSub"); const old = sub.textContent;
+  sub.textContent = msg;
+  setTimeout(()=>{ sub.textContent = old; }, 2000);
+}
+</script>
+</body>
+</html>
