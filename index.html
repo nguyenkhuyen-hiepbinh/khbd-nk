@@ -2755,7 +2755,7 @@ function generateAll(){
   }
   return fillSections({ offline:false });
 }
-function generateSample(){ return fillSections({ offline:true }); }
+function generateSample(){ return fillSections({ offline:true, variant:true }); }
 function generateVariant(){ return fillSections({ offline:true, variant:true }); }
 
 $("btnGenerate").addEventListener("click", generateAll);
