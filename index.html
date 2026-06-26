@@ -532,6 +532,11 @@
         <option value="strong">Mạnh: đổi kĩ thuật dạy học và sản phẩm</option>
       </select>
     </div>
+    <div class="field">
+      <label>Mã chống trùng</label>
+      <input type="text" id="inpAntiDupSeed" placeholder="Mỗi GV dùng một mã riêng">
+    </div>
+    <button type="button" class="btn btn-soft" id="btnShuffleVariant">Đổi mã biến thể</button>
     <div class="divider"></div>
     <div class="sidebar-section-title">Kế hoạch của Tổ</div>
     <div class="dept-entry">
@@ -1805,21 +1810,86 @@ const VARIATION_BANK = {
     "poster/infographic số", "phiếu kiểm chứng nguồn", "bảng dữ liệu có công thức",
     "sơ đồ tư duy số", "slide báo cáo ngắn", "video giải thích 1 phút",
     "bảng so sánh kèm trích dẫn nguồn"
+  ],
+  questionFrames: [
+    "câu hỏi dự đoán - kiểm chứng",
+    "câu hỏi so sánh hai cách giải thích",
+    "câu hỏi đọc dữ liệu/đồ thị/bảng",
+    "câu hỏi phản biện nguồn học liệu",
+    "câu hỏi liên hệ tình huống địa phương"
+  ],
+  grouping: [
+    "cặp đôi luân phiên",
+    "nhóm chuyên gia - nhóm mảnh ghép",
+    "trạm học tập theo mức độ",
+    "nhóm báo cáo nhanh 3 phút",
+    "phòng tranh có phiếu phản hồi"
+  ],
+  assessmentAngles: [
+    "rubric 3 tiêu chí: đúng kiến thức - minh chứng - trình bày",
+    "phiếu tự đánh giá và đánh giá đồng đẳng",
+    "bảng kiểm tiến trình thực hiện nhiệm vụ",
+    "nhận xét theo sản phẩm số và phần giải thích miệng",
+    "minh chứng học tập cá nhân trước khi thống nhất nhóm"
+  ],
+  localContexts: [
+    "tình huống tại lớp/trường",
+    "dữ liệu hoặc hiện tượng ở địa phương",
+    "vấn đề nghề nghiệp liên quan môn học",
+    "một tình huống đời sống hằng ngày",
+    "một ví dụ từ phòng thí nghiệm hoặc học liệu số"
   ]
 };
-function pickFrom(list, salt=0){
+function hashString(str){
+  let h = 2166136261;
+  for(let i=0; i<str.length; i++){
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+function ensureAntiDupSeed(force=false){
+  const el = $("inpAntiDupSeed");
+  if(!el) return "";
+  if(force || !el.value.trim()){
+    el.value = `KHBD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+  }
+  return el.value.trim();
+}
+function antiDupSeed(){
+  const lesson = currentLesson ? `${currentLesson.chuong}|${currentLesson.bai}` : "";
+  let accessCode = "";
+  try{ accessCode = JSON.parse(localStorage.getItem("khbd-access-session-v2") || "null")?.code || ""; }catch(e){}
+  const deviceId = typeof getDeviceId === "function" ? getDeviceId() : "";
+  const stableParts = [
+    $("inpTeacher")?.value.trim(),
+    $("inpLop")?.value.trim(),
+    subjectName(),
+    activeGrade(),
+    lesson,
+    $("selClassProfile")?.value,
+    $("selFacilities")?.value,
+    accessCode || deviceId
+  ].filter(Boolean).join("|");
+  return [ensureAntiDupSeed(false), stableParts].filter(Boolean).join("|");
+}
+function seededPick(list, salt=0){
   if(!list.length) return "";
-  const base = currentLesson ? (currentLesson.bai.length + currentLesson.chuong.length) : 0;
-  const idx = Math.abs(base + variationRun * 7 + salt * 3 + new Date().getMinutes()) % list.length;
-  return list[idx];
+  const seed = `${antiDupSeed()}|${variationRun}|${salt}|${$("selVariation")?.value || ""}`;
+  return list[hashString(seed) % list.length];
 }
 function buildVariant(){
+  const id = hashString(antiDupSeed()).toString(36).toUpperCase();
   return {
-    id: `${Date.now().toString(36)}-${variationRun}`,
-    hook: pickFrom(VARIATION_BANK.hooks, 1),
-    technique: pickFrom(VARIATION_BANK.techniques, 2),
-    digitalTool: pickFrom(VARIATION_BANK.digitalTools, 3),
-    product: pickFrom(VARIATION_BANK.products, 4),
+    id: `${id}-${variationRun}`,
+    hook: seededPick(VARIATION_BANK.hooks, 1),
+    technique: seededPick(VARIATION_BANK.techniques, 2),
+    digitalTool: seededPick(VARIATION_BANK.digitalTools, 3),
+    product: seededPick(VARIATION_BANK.products, 4),
+    questionFrame: seededPick(VARIATION_BANK.questionFrames, 5),
+    grouping: seededPick(VARIATION_BANK.grouping, 6),
+    assessmentAngle: seededPick(VARIATION_BANK.assessmentAngles, 7),
+    localContext: seededPick(VARIATION_BANK.localContexts, 8),
     difference: $("selVariation")?.value || "medium"
   };
 }
@@ -1857,8 +1927,9 @@ function getPersonalizationBlock(){
 - Đặc điểm lớp: ${classProfileLabel($("selClassProfile")?.value)}
 - Điều kiện tổ chức: ${facilitiesLabel($("selFacilities")?.value)}
 - Mức độ khác biệt mong muốn: ${variationLabel($("selVariation")?.value)}
+- Mã chống trùng: ${$("inpAntiDupSeed")?.value.trim() || v.id}
 - Biến thể đang dùng: ${v.id}
-- Gợi ý biến thể: mở đầu bằng ${v.hook}; kĩ thuật dạy học ${v.technique}; công cụ số ${v.digitalTool}; sản phẩm ${v.product}.
+- Gợi ý biến thể: mở đầu bằng ${v.hook}; kĩ thuật dạy học ${v.technique}; cách chia nhóm ${v.grouping}; khung câu hỏi ${v.questionFrame}; công cụ số ${v.digitalTool}; sản phẩm ${v.product}; đánh giá theo ${v.assessmentAngle}; bối cảnh ưu tiên ${v.localContext}.
 `;
 }
 function saveDeptPlan(show=true){
@@ -2452,6 +2523,10 @@ YÊU CẦU CHỐNG TRÙNG LẶP GIỮA CÁC GIÁO VIÊN
 - Không sao chép y nguyên một kế hoạch bài dạy mẫu.
 - Giữ nguyên yêu cầu cần đạt, chuẩn kiến thức ${subjectName()} ${activeGrade()}, cấu trúc KHBD và mã NLS phù hợp.
 - Tạo khác biệt ở tình huống khởi động, kĩ thuật tổ chức, câu hỏi luyện tập, nhiệm vụ vận dụng, công cụ số và sản phẩm học tập.
+- Mã chống trùng/biến thể phải chi phối cách viết: không dùng cùng ví dụ, cùng thứ tự hoạt động, cùng câu hỏi trọng tâm nếu tạo cho giáo viên khác.
+- Giữ chuẩn nhưng thay đổi ít nhất 5 yếu tố: bối cảnh mở đầu, cách chia nhóm, dữ liệu/học liệu, câu hỏi luyện tập, sản phẩm vận dụng, tiêu chí đánh giá.
+- Không viết văn bản quá chung chung; gắn với thông tin cá nhân hóa của giáo viên/lớp ở trên.
+- Nếu cùng một bài được tạo lại, tạo phiên bản mới theo biến thể đang dùng.
 ${note ? "\nGHI CHÚ CỦA GIÁO VIÊN: " + note : ""}`;
 }
 
@@ -2506,25 +2581,25 @@ function buildFallbackSection(key){
   const facilities = facilitiesLabel($("selFacilities")?.value);
   const sgv = sgvGuideForLesson(l);
   const tasks = lessonOutlineTasks();
-  const taskLines = tasks.map((t, i) => `- Nhiệm vụ ${i + 1}: ${t}. GV giao nhiệm vụ học tập theo định hướng SGV, HS khai thác SGK/học liệu, thảo luận, quan sát hoặc xử lí dữ liệu phù hợp; GV chốt kiến thức, chuẩn hóa thuật ngữ và công thức cần nhớ.`).join("\n");
+  const taskLines = tasks.map((t, i) => `- Nhiệm vụ ${i + 1}: ${t}. GV tổ chức theo ${variant.grouping}, dùng ${variant.questionFrame} để HS khai thác SGK/học liệu, thảo luận, quan sát hoặc xử lí dữ liệu phù hợp; GV chốt kiến thức, chuẩn hóa thuật ngữ và nội dung cần nhớ.`).join("\n");
   const commonTail = note ? `\n- Điều chỉnh theo ghi chú của GV: ${note}` : "";
-  const hd1Gv = `Giao nhiệm vụ học tập: GV tổ chức mở đầu bằng ${variant.hook} liên quan đến bài "${l.bai}", yêu cầu HS dự đoán và nêu điều cần tìm hiểu.
+  const hd1Gv = `Giao nhiệm vụ học tập: GV tổ chức mở đầu bằng ${variant.hook} gắn với ${variant.localContext} liên quan đến bài "${l.bai}", yêu cầu HS dự đoán và nêu điều cần tìm hiểu.
 Thực hiện nhiệm vụ: HS suy nghĩ cá nhân, trao đổi nhanh theo cặp/nhóm nhỏ; có thể tìm nhanh một thông tin minh chứng nếu GV cho phép.
 Báo cáo, thảo luận: Đại diện HS nêu dự đoán, căn cứ và câu hỏi còn băn khoăn.
 Kết luận, nhận định: GV nhận xét, chốt vấn đề học tập và dẫn dắt vào bài.`;
-  const hd2Gv = `Giao nhiệm vụ học tập: GV chia nhiệm vụ theo các đề mục SGK, sử dụng kĩ thuật ${variant.technique}, phát phiếu học tập và hướng dẫn nguồn học liệu/công cụ số phù hợp.
+  const hd2Gv = `Giao nhiệm vụ học tập: GV chia nhiệm vụ theo các đề mục SGK, tổ chức ${variant.grouping} và sử dụng kĩ thuật ${variant.technique}, phát phiếu học tập và hướng dẫn nguồn học liệu/công cụ số phù hợp.
 Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, ${isLS() ? "khai thác tư liệu, sử liệu, bản đồ/lược đồ" : (isVL() ? "quan sát hiện tượng, thí nghiệm/mô phỏng, đo đạc, phân tích số liệu và đồ thị" : (isBIO() ? "quan sát mẫu vật/hình ảnh, phân tích sơ đồ, dữ liệu sinh học hoặc mô phỏng quá trình sống" : "phân tích dữ liệu, quan sát thí nghiệm/mô phỏng"))} hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
 Báo cáo, thảo luận: Các nhóm trình bày kết quả; nhóm khác nhận xét, bổ sung, đặt câu hỏi và kiểm chứng thông tin.
 Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh ${isLS() ? "sự kiện/niên đại/khái niệm" : (isVL() ? "khái niệm, định luật, mô hình, công thức và đơn vị đo" : (isBIO() ? "khái niệm, cơ chế, quá trình, mối liên hệ cấu trúc - chức năng" : "thuật ngữ/công thức"))} trọng tâm.
 ${taskLines}`;
-  const hd3Gv = `Giao nhiệm vụ học tập: GV giao câu hỏi/bài tập luyện tập theo cá nhân hoặc nhóm nhỏ.
+  const hd3Gv = `Giao nhiệm vụ học tập: GV giao câu hỏi/bài tập luyện tập theo ${variant.questionFrame} cho cá nhân hoặc nhóm nhỏ.
 Thực hiện nhiệm vụ: HS hoàn thành bài tập, có thể dùng ${variant.digitalTool}, phiếu số hoặc công cụ kiểm tra kết quả theo hướng dẫn.
 Báo cáo, thảo luận: HS trình bày đáp án, giải thích cách làm; các nhóm đối chiếu, nhận xét.
-Kết luận, nhận định: GV chuẩn hóa đáp án, chỉ ra lỗi thường gặp và cách tự kiểm tra kết quả.`;
+Kết luận, nhận định: GV chuẩn hóa đáp án, chỉ ra lỗi thường gặp và hướng dẫn HS tự kiểm tra theo ${variant.assessmentAngle}.`;
   const hd4Gv = `Giao nhiệm vụ học tập: GV giao nhiệm vụ vận dụng có tích hợp năng lực số: ${l.hoatdong}
-Thực hiện nhiệm vụ: HS thực hiện cá nhân/nhóm, thu thập và kiểm chứng thông tin, tạo ${variant.product} bằng công cụ phù hợp.
+Thực hiện nhiệm vụ: HS thực hiện cá nhân/nhóm theo ${variant.grouping}, thu thập và kiểm chứng thông tin, tạo ${variant.product} bằng công cụ phù hợp.
 Báo cáo, thảo luận: HS nộp/chia sẻ sản phẩm, trình bày nguồn tham khảo và cách kiểm chứng.
-Kết luận, nhận định: GV nhận xét theo tiêu chí: đúng kiến thức ${subjectShort()}, nguồn đáng tin cậy, trình bày rõ, sử dụng công cụ số an toàn và có trách nhiệm.`;
+Kết luận, nhận định: GV nhận xét theo ${variant.assessmentAngle}; bảo đảm đúng kiến thức ${subjectShort()}, nguồn đáng tin cậy, trình bày rõ, sử dụng công cụ số an toàn và có trách nhiệm.`;
   const nangLucDacThuBlock = isLS()
     ? `2.2. Năng lực lịch sử\n- Tìm hiểu lịch sử: Nhận diện, khai thác và sử dụng được tư liệu/sử liệu liên quan đến bài học.\n- Nhận thức và tư duy lịch sử: Trình bày, giải thích diễn biến, nguyên nhân - kết quả, ý nghĩa của sự kiện/quá trình lịch sử trong bài.\n- Vận dụng kiến thức, kĩ năng đã học: Rút ra bài học lịch sử, liên hệ vận dụng vào vấn đề thực tiễn.`
     : isVL()
@@ -2731,6 +2806,7 @@ function collectDraft(){
     classProfile: $("selClassProfile")?.value || "mixed",
     facilities: $("selFacilities")?.value || "standard",
     variation: $("selVariation")?.value || "medium",
+    antiDupSeed: $("inpAntiDupSeed")?.value || "",
     deptPlan: $("txtDeptPlan")?.value || "",
     deptName: $("inpDeptName")?.value || "",
     schoolYear: $("inpSchoolYear")?.value || "",
@@ -2755,6 +2831,10 @@ function scheduleDeptSave(){
   clearTimeout(scheduleDeptSave._timer);
   scheduleDeptSave._timer = setTimeout(() => saveDeptPlan(false), 700);
 }
+function refreshVariantOnPersonalizationChange(){
+  currentVariant = null;
+  scheduleDraftSave();
+}
 function loadDraft(){
   const raw = localStorage.getItem(STORAGE_KEY);
   if(!raw){ showToast("Chưa có bản nháp đã lưu."); return; }
@@ -2775,6 +2855,7 @@ function loadDraft(){
     if($("selClassProfile")) $("selClassProfile").value = d.classProfile || "mixed";
     if($("selFacilities")) $("selFacilities").value = d.facilities || "standard";
     if($("selVariation")) $("selVariation").value = d.variation || "medium";
+    if($("inpAntiDupSeed")) $("inpAntiDupSeed").value = d.antiDupSeed || "";
     if($("txtDeptPlan")) $("txtDeptPlan").value = d.deptPlan || localStorage.getItem(DEPT_STORAGE_KEY) || "";
     if($("inpDeptName")) $("inpDeptName").value = d.deptName || `Tổ ${subjectName()}`;
     if($("inpSchoolYear")) $("inpSchoolYear").value = d.schoolYear || "";
@@ -2801,15 +2882,29 @@ function initDefaults(){
     if(apiField) apiField.style.display = "none";
   }
 }
-["inpLop","inpTiet","inpNgay","inpNote","txtYccd","inpTeacher","txtDeptPlan","inpDeptName","inpSchoolYear"].forEach(id => {
+["inpTiet","inpNgay","inpNote","txtYccd","txtDeptPlan","inpDeptName","inpSchoolYear"].forEach(id => {
   const el = $(id);
   if(el) el.addEventListener("input", scheduleDraftSave);
+});
+["inpTeacher","inpAntiDupSeed","inpLop"].forEach(id => {
+  const el = $(id);
+  if(el) el.addEventListener("input", refreshVariantOnPersonalizationChange);
 });
 $("paper").addEventListener("input", scheduleDraftSave);
 $("deptPaper").addEventListener("input", scheduleDeptSave);
 $("btnSaveDraft").addEventListener("click", () => saveDraft(true));
 $("btnLoadDraft").addEventListener("click", loadDraft);
-["selClassProfile","selFacilities","selVariation"].forEach(id => { const el=$(id); if(el) el.addEventListener("change", scheduleDraftSave); });
+["selClassProfile","selFacilities","selVariation"].forEach(id => { const el=$(id); if(el) el.addEventListener("change", refreshVariantOnPersonalizationChange); });
+const shuffleVariantBtn = $("btnShuffleVariant");
+if(shuffleVariantBtn){
+  shuffleVariantBtn.addEventListener("click", () => {
+    ensureAntiDupSeed(true);
+    variationRun += 1;
+    ensureVariant(true);
+    scheduleDraftSave();
+    showToast("Đã đổi mã biến thể chống trùng.");
+  });
+}
 const deptEl = $("txtDeptPlan");
 if(deptEl) deptEl.addEventListener("blur", () => saveDeptPlan(false));
 if($("btnSaveDept")) $("btnSaveDept").addEventListener("click", () => saveDeptPlan(true));
