@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>Soạn KHBD Hóa học 10 - hoàn thiện</title>
+<title>Soạn KHBD THPT - hoàn thiện</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -405,7 +405,7 @@
 
 <div class="access-gate" id="accessGate">
   <div class="access-card">
-    <h1>KHBD Hóa học</h1>
+    <h1>KHBD THPT</h1>
     <p>Nhập mã truy cập đã được cấp để sử dụng ứng dụng. Mỗi mã dùng cho một giáo viên, hiệu lực 1 năm học.</p>
     <label for="accessCodeInput">Mã truy cập</label>
     <input id="accessCodeInput" type="password" autocomplete="one-time-code" placeholder="VD: HTL-AB12CD">
@@ -436,6 +436,8 @@
       <label>Môn học</label>
       <select id="selMon">
         <option value="hoa">Hóa học</option>
+        <option value="vl">Vật lí</option>
+        <option value="bio">Sinh học</option>
         <option value="ls">Lịch sử</option>
       </select>
     </div>
@@ -836,10 +838,13 @@ const NLS_DESCRIPTORS = {
   ]},
 };
 
-let currentSubject = "hoa"; // "hoa" | "ls"
+let currentSubject = "hoa"; // "hoa" | "vl" | "bio" | "ls"
 function isLS(){ return currentSubject === "ls"; }
-function subjectName(){ return isLS() ? "Lịch sử" : "Hóa học"; }
-function subjectShort(){ return isLS() ? "lịch sử" : "hoá học"; }
+function isVL(){ return currentSubject === "vl"; }
+function isBIO(){ return currentSubject === "bio"; }
+function subjectName(){ return isLS() ? "Lịch sử" : (isVL() ? "Vật lí" : (isBIO() ? "Sinh học" : "Hóa học")); }
+function subjectShort(){ return isLS() ? "lịch sử" : (isVL() ? "vật lí" : (isBIO() ? "sinh học" : "hoá học")); }
+function subjectSlug(){ return isLS() ? "Lich-su" : (isVL() ? "Vat-li" : (isBIO() ? "Sinh-hoc" : "Hoa-hoc")); }
 
 const DATA = {
   sgk: [
@@ -1415,10 +1420,348 @@ const LS_DATA = {
 
 };
 const DATA_LS10 = LS_DATA[10], DATA_LS11 = LS_DATA[11], DATA_LS12 = LS_DATA[12];
+function physicsLesson(chuong, bai, ycc, mien=["I","V"], extra={}){
+  return {
+    chuong, bai, ycc, mien,
+    demuc: extra.demuc || "",
+    congcu: extra.congcu || "SGK, video thí nghiệm, mô phỏng PhET, bảng tính hoặc GeoGebra phù hợp.",
+    hoatdong: extra.hoatdong || "HS quan sát hiện tượng/mô phỏng, đo đạc hoặc xử lí số liệu, thảo luận và rút ra kết luận vật lí.",
+    sanpham: extra.sanpham || "Phiếu học tập/báo cáo ngắn có bảng số liệu, đồ thị hoặc hình ảnh minh chứng."
+  };
+}
+const VL_DATA = {
+  10: { sgk: [
+    physicsLesson("Chương 1. Mở đầu", "Bài 1. Làm quen với Vật lí", "Nêu được đối tượng nghiên cứu, vai trò của vật lí trong khoa học, công nghệ và đời sống; trình bày được phương pháp nghiên cứu vật lí.", ["I","III"], {demuc:"Đối tượng nghiên cứu của Vật lí | Vai trò của Vật lí | Phương pháp nghiên cứu Vật lí"}),
+    physicsLesson("Chương 1. Mở đầu", "Bài 2. Các quy tắc an toàn trong phòng thực hành Vật lí", "Trình bày và thực hiện được các quy tắc an toàn khi học tập, thí nghiệm; nhận biết được một số kí hiệu cảnh báo trong phòng thực hành.", ["III","V"], {demuc:"An toàn khi sử dụng thiết bị | Kí hiệu cảnh báo | Xử lí tình huống mất an toàn"}),
+    physicsLesson("Chương 1. Mở đầu", "Bài 3. Thực hành tính sai số trong phép đo. Ghi kết quả đo", "Thực hiện được phép đo đại lượng vật lí, tính sai số, ghi kết quả đo đúng quy ước và nhận xét độ tin cậy của phép đo.", ["I","V"], {demuc:"Phép đo và sai số | Cách ghi kết quả đo | Thực hành xử lí số liệu", congcu:"Bảng tính Google Sheets/Excel để nhập số liệu, tính giá trị trung bình và sai số."}),
+    physicsLesson("Chương 2. Động học", "Bài 4. Độ dịch chuyển và quãng đường đi được", "Phân biệt được quãng đường và độ dịch chuyển; xác định được độ dịch chuyển trong một số tình huống chuyển động thẳng.", ["I","V"], {demuc:"Vị trí, quỹ đạo | Quãng đường | Độ dịch chuyển"}),
+    physicsLesson("Chương 2. Động học", "Bài 5. Tốc độ và vận tốc", "Nêu được khái niệm tốc độ, vận tốc; vận dụng được công thức tính tốc độ trung bình, vận tốc trung bình trong bài tập và tình huống thực tiễn.", ["I","V"], {demuc:"Tốc độ | Vận tốc | Vận dụng giải bài tập"}),
+    physicsLesson("Chương 2. Động học", "Bài 6. Thực hành đo tốc độ của vật chuyển động", "Thiết kế và thực hiện được phương án đo tốc độ; thu thập, xử lí số liệu và đánh giá sai số phép đo.", ["I","V"], {demuc:"Phương án thí nghiệm | Thu thập số liệu | Xử lí và báo cáo kết quả", congcu:"Điện thoại quay video, đồng hồ đo thời gian, bảng tính để xử lí dữ liệu."}),
+    physicsLesson("Chương 2. Động học", "Bài 7. Đồ thị độ dịch chuyển - thời gian", "Vẽ và phân tích được đồ thị độ dịch chuyển - thời gian; xác định được vận tốc từ đồ thị trong chuyển động thẳng.", ["I","V"], {demuc:"Đọc đồ thị | Vẽ đồ thị | Xác định vận tốc từ đồ thị", congcu:"GeoGebra hoặc bảng tính để vẽ đồ thị chuyển động."}),
+    physicsLesson("Chương 2. Động học", "Bài 8. Chuyển động biến đổi. Gia tốc", "Nêu được khái niệm gia tốc; xác định được gia tốc trung bình và mô tả được ý nghĩa vật lí của gia tốc.", ["I","V"], {demuc:"Chuyển động biến đổi | Gia tốc | Ý nghĩa của gia tốc"}),
+    physicsLesson("Chương 2. Động học", "Bài 9. Chuyển động thẳng biến đổi đều", "Vận dụng được các công thức của chuyển động thẳng biến đổi đều để giải bài tập và giải thích hiện tượng đơn giản.", ["I","V"], {demuc:"Các công thức chuyển động | Đồ thị vận tốc - thời gian | Vận dụng"}),
+    physicsLesson("Chương 2. Động học", "Bài 10. Sự rơi tự do", "Nêu được đặc điểm của sự rơi tự do; vận dụng được công thức rơi tự do trong điều kiện gần đúng.", ["I","V"], {demuc:"Khái niệm rơi tự do | Gia tốc rơi tự do | Vận dụng"}),
+    physicsLesson("Chương 2. Động học", "Bài 11. Thực hành đo gia tốc rơi tự do", "Thực hiện được thí nghiệm đo gia tốc rơi tự do; xử lí số liệu, đánh giá sai số và viết báo cáo thực hành.", ["I","V"], {demuc:"Thiết bị đo | Tiến hành thí nghiệm | Xử lí số liệu"}),
+    physicsLesson("Chương 3. Động lực học", "Bài 12. Tổng hợp và phân tích lực. Cân bằng lực", "Biểu diễn được lực; tổng hợp, phân tích được lực đồng quy và nêu điều kiện cân bằng của chất điểm.", ["I","V"], {demuc:"Lực và biểu diễn lực | Tổng hợp lực | Phân tích lực | Cân bằng lực"}),
+    physicsLesson("Chương 3. Động lực học", "Bài 13. Định luật 1 Newton", "Phát biểu và vận dụng được định luật 1 Newton; giải thích được quán tính trong một số tình huống thực tiễn.", ["I","V"], {demuc:"Quán tính | Định luật 1 Newton | Vận dụng"}),
+    physicsLesson("Chương 3. Động lực học", "Bài 14. Định luật 2 Newton", "Phát biểu và vận dụng được định luật 2 Newton; xác định được mối liên hệ giữa lực, khối lượng và gia tốc.", ["I","V"], {demuc:"Lực và gia tốc | Định luật 2 Newton | Bài tập vận dụng"}),
+    physicsLesson("Chương 3. Động lực học", "Bài 15. Định luật 3 Newton", "Phát biểu và vận dụng được định luật 3 Newton; nhận diện được cặp lực tương tác trong các tình huống.", ["I","V"], {demuc:"Tương tác giữa các vật | Định luật 3 Newton | Cặp lực trực đối"}),
+    physicsLesson("Chương 3. Động lực học", "Bài 16. Trọng lực và lực căng", "Mô tả được trọng lực, trọng lượng, lực căng dây; vận dụng được vào bài toán cân bằng và chuyển động đơn giản.", ["I","V"], {demuc:"Trọng lực, trọng lượng | Lực căng dây | Vận dụng"}),
+    physicsLesson("Chương 3. Động lực học", "Bài 17. Lực ma sát", "Nêu được đặc điểm của lực ma sát; vận dụng được công thức lực ma sát trượt và giải thích vai trò của ma sát.", ["I","V"], {demuc:"Các loại ma sát | Lực ma sát trượt | Vai trò của ma sát"}),
+    physicsLesson("Chương 3. Động lực học", "Bài 18. Lực cản và lực nâng", "Mô tả được lực cản, lực nâng; giải thích được một số hiện tượng liên quan chuyển động trong chất lưu.", ["I","V"], {demuc:"Lực cản | Lực nâng | Ứng dụng trong đời sống"}),
+    physicsLesson("Chương 3. Động lực học", "Bài 19. Lực hướng tâm", "Nêu được lực hướng tâm; vận dụng được biểu thức lực hướng tâm trong chuyển động tròn đều.", ["I","V"], {demuc:"Chuyển động tròn | Gia tốc hướng tâm | Lực hướng tâm"}),
+    physicsLesson("Chương 4. Năng lượng, công, công suất", "Bài 20. Năng lượng. Công cơ học", "Nêu được khái niệm năng lượng, công cơ học; tính được công của lực trong trường hợp đơn giản.", ["I","V"], {demuc:"Năng lượng | Công cơ học | Công của lực"}),
+    physicsLesson("Chương 4. Năng lượng, công, công suất", "Bài 21. Công suất", "Nêu được khái niệm công suất; vận dụng được công thức công suất trong bài tập và tình huống thực tiễn.", ["I","V"], {demuc:"Khái niệm công suất | Đơn vị công suất | Vận dụng"}),
+    physicsLesson("Chương 4. Năng lượng, công, công suất", "Bài 22. Động năng, thế năng", "Nêu và vận dụng được biểu thức động năng, thế năng trọng trường và thế năng đàn hồi trong tình huống phù hợp.", ["I","V"], {demuc:"Động năng | Thế năng trọng trường | Thế năng đàn hồi"}),
+    physicsLesson("Chương 4. Năng lượng, công, công suất", "Bài 23. Cơ năng và định luật bảo toàn cơ năng", "Phát biểu và vận dụng được định luật bảo toàn cơ năng trong một số trường hợp đơn giản.", ["I","V"], {demuc:"Cơ năng | Bảo toàn cơ năng | Vận dụng"}),
+    physicsLesson("Chương 4. Năng lượng, công, công suất", "Bài 24. Hiệu suất", "Nêu được khái niệm hiệu suất; tính được hiệu suất và đề xuất được biện pháp sử dụng năng lượng hiệu quả.", ["I","III"], {demuc:"Công có ích và công toàn phần | Hiệu suất | Sử dụng năng lượng hiệu quả"}),
+    physicsLesson("Chương 5. Động lượng", "Bài 25. Động lượng", "Nêu được khái niệm động lượng; xác định được động lượng của vật và xung lượng của lực.", ["I","V"], {demuc:"Động lượng | Xung lượng của lực | Liên hệ lực - động lượng"}),
+    physicsLesson("Chương 5. Động lượng", "Bài 26. Định luật bảo toàn động lượng", "Phát biểu và vận dụng được định luật bảo toàn động lượng trong va chạm, chuyển động bằng phản lực.", ["I","V"], {demuc:"Hệ kín | Bảo toàn động lượng | Va chạm và phản lực"}),
+    physicsLesson("Chương 6. Chuyển động tròn", "Bài 27. Động học của chuyển động tròn đều", "Mô tả được chuyển động tròn đều; vận dụng được các đại lượng tốc độ góc, chu kì, tần số.", ["I","V"], {demuc:"Tốc độ góc | Chu kì, tần số | Liên hệ vận tốc dài - tốc độ góc"}),
+    physicsLesson("Chương 6. Chuyển động tròn", "Bài 28. Lực hướng tâm và gia tốc hướng tâm", "Xác định được gia tốc hướng tâm, lực hướng tâm và giải thích được một số chuyển động tròn trong thực tế.", ["I","V"], {demuc:"Gia tốc hướng tâm | Lực hướng tâm | Ứng dụng"}),
+    physicsLesson("Chương 7. Biến dạng của vật rắn", "Bài 29. Biến dạng của vật rắn. Đặc tính của lò xo", "Nêu được biến dạng đàn hồi, định luật Hooke; vận dụng được công thức lực đàn hồi của lò xo.", ["I","V"], {demuc:"Biến dạng đàn hồi | Định luật Hooke | Lực đàn hồi"}),
+    physicsLesson("Chương 7. Biến dạng của vật rắn", "Bài 30. Thực hành đo độ cứng của lò xo", "Thực hiện được thí nghiệm đo độ cứng của lò xo; vẽ đồ thị lực - độ biến dạng và rút ra kết luận.", ["I","V"], {demuc:"Bố trí thí nghiệm | Thu thập số liệu | Vẽ đồ thị và xác định độ cứng", congcu:"Bảng tính/GeoGebra để vẽ đồ thị F - Δl và xác định hệ số góc."})
+  ], cd: [
+    physicsLesson("Chuyên đề 1. Vật lí trong một số ngành nghề", "Bài 1. Sơ lược về sự phát triển của Vật lí", "Trình bày được một số giai đoạn phát triển của vật lí và vai trò của các phát minh vật lí đối với đời sống.", ["I","III"], {demuc:"Một số mốc phát triển | Vai trò của Vật lí | Nhà vật lí tiêu biểu"}),
+    physicsLesson("Chuyên đề 1. Vật lí trong một số ngành nghề", "Bài 2. Ứng dụng Vật lí trong một số ngành nghề", "Nêu được ứng dụng của vật lí trong y học, công nghiệp, truyền thông, giao thông và năng lượng.", ["I","V"], {demuc:"Ứng dụng trong công nghệ | Ứng dụng trong đời sống | Liên hệ nghề nghiệp"}),
+    physicsLesson("Chuyên đề 1. Vật lí trong một số ngành nghề", "Bài 3. Định hướng nghề nghiệp liên quan đến Vật lí", "Tìm hiểu được một số nghề nghiệp liên quan đến vật lí; xác định được yêu cầu năng lực và phẩm chất cần có.", ["I","III"], {demuc:"Nhóm nghề liên quan | Yêu cầu nghề nghiệp | Kế hoạch học tập cá nhân"}),
+    physicsLesson("Chuyên đề 2. Trái Đất và bầu trời", "Bài 4. Xác định phương hướng", "Vận dụng được kiến thức về Mặt Trời, la bàn và bản đồ số để xác định phương hướng trong thực tiễn.", ["I","V"], {demuc:"Phương hướng | La bàn | Bản đồ số"}),
+    physicsLesson("Chuyên đề 2. Trái Đất và bầu trời", "Bài 5. Chuyển động nhìn thấy của Mặt Trời, Mặt Trăng và các thiên thể", "Mô tả được chuyển động nhìn thấy của một số thiên thể và giải thích được hiện tượng ngày đêm, mùa.", ["I","V"], {demuc:"Chuyển động nhìn thấy | Ngày đêm | Mùa và lịch"}),
+    physicsLesson("Chuyên đề 2. Trái Đất và bầu trời", "Bài 6. Mô hình nhật tâm và hệ Mặt Trời", "Trình bày được mô hình nhật tâm, cấu trúc hệ Mặt Trời và sử dụng mô phỏng để quan sát chuyển động thiên thể.", ["I","V"], {demuc:"Mô hình nhật tâm | Hệ Mặt Trời | Mô phỏng thiên văn", congcu:"Stellarium, NASA Solar System hoặc mô phỏng thiên văn trực tuyến."}),
+    physicsLesson("Chuyên đề 3. Vật lí với giáo dục bảo vệ môi trường", "Bài 7. Năng lượng và môi trường", "Phân tích được tác động môi trường của việc khai thác, sử dụng năng lượng; liên hệ trách nhiệm cá nhân.", ["I","III"], {demuc:"Nguồn năng lượng | Tác động môi trường | Trách nhiệm sử dụng năng lượng"}),
+    physicsLesson("Chuyên đề 3. Vật lí với giáo dục bảo vệ môi trường", "Bài 8. Sử dụng năng lượng tiết kiệm, hiệu quả", "Đề xuất được giải pháp sử dụng năng lượng tiết kiệm, hiệu quả trong trường học hoặc gia đình.", ["I","V"], {demuc:"Hiệu quả năng lượng | Giải pháp tiết kiệm | Theo dõi tiêu thụ điện"}),
+    physicsLesson("Chuyên đề 3. Vật lí với giáo dục bảo vệ môi trường", "Bài 9. Dự án tìm hiểu năng lượng tái tạo tại địa phương", "Thực hiện được dự án học tập nhỏ về năng lượng tái tạo; thu thập, xử lí thông tin và báo cáo kết quả.", ["I","V"], {demuc:"Câu hỏi dự án | Thu thập dữ liệu | Báo cáo và đề xuất", congcu:"Google Forms/Sheets, bản đồ số, Canva hoặc PowerPoint để trình bày dự án."})
+  ]},
+  11: { sgk: [
+    physicsLesson("Chương 1. Dao động", "Bài 1. Dao động điều hòa", "Nêu được khái niệm dao động điều hòa; mô tả được li độ, biên độ, pha, tần số góc, chu kì, tần số.", ["I","V"], {demuc:"Dao động cơ | Dao động điều hòa | Các đại lượng đặc trưng"}),
+    physicsLesson("Chương 1. Dao động", "Bài 2. Mô tả dao động điều hòa", "Viết và sử dụng được phương trình dao động điều hòa; khai thác được đồ thị li độ - thời gian.", ["I","V"], {demuc:"Phương trình dao động | Đồ thị li độ - thời gian | Vận dụng"}),
+    physicsLesson("Chương 1. Dao động", "Bài 3. Vận tốc, gia tốc trong dao động điều hòa", "Xác định được vận tốc, gia tốc trong dao động điều hòa và mối liên hệ với li độ.", ["I","V"], {demuc:"Vận tốc | Gia tốc | Pha dao động"}),
+    physicsLesson("Chương 1. Dao động", "Bài 4. Năng lượng trong dao động điều hòa", "Nêu được sự chuyển hóa động năng, thế năng; vận dụng được biểu thức cơ năng trong dao động điều hòa.", ["I","V"], {demuc:"Động năng | Thế năng | Cơ năng dao động"}),
+    physicsLesson("Chương 1. Dao động", "Bài 5. Dao động tắt dần, dao động cưỡng bức và cộng hưởng", "Mô tả được dao động tắt dần, cưỡng bức, cộng hưởng và nêu được ứng dụng, tác hại trong thực tiễn.", ["I","V"], {demuc:"Dao động tắt dần | Dao động cưỡng bức | Cộng hưởng"}),
+    physicsLesson("Chương 1. Dao động", "Bài 6. Thực hành khảo sát dao động điều hòa", "Tiến hành được thí nghiệm khảo sát dao động; xử lí số liệu, vẽ đồ thị và rút ra nhận xét.", ["I","V"], {demuc:"Bố trí thí nghiệm | Thu thập số liệu | Vẽ đồ thị", congcu:"Cảm biến/điện thoại, phần mềm phân tích video hoặc bảng tính."}),
+    physicsLesson("Chương 2. Sóng", "Bài 7. Sóng cơ và sự truyền sóng", "Nêu được khái niệm sóng cơ, sóng ngang, sóng dọc; mô tả được sự truyền sóng trong môi trường.", ["I","V"], {demuc:"Sóng cơ | Sóng ngang, sóng dọc | Sự truyền sóng"}),
+    physicsLesson("Chương 2. Sóng", "Bài 8. Các đặc trưng vật lí của sóng", "Nêu và vận dụng được chu kì, tần số, bước sóng, tốc độ truyền sóng và phương trình sóng đơn giản.", ["I","V"], {demuc:"Chu kì, tần số | Bước sóng | Tốc độ truyền sóng"}),
+    physicsLesson("Chương 2. Sóng", "Bài 9. Giao thoa sóng", "Mô tả và giải thích được giao thoa sóng; xác định được điều kiện cực đại, cực tiểu giao thoa.", ["I","V"], {demuc:"Nguồn kết hợp | Cực đại giao thoa | Cực tiểu giao thoa"}),
+    physicsLesson("Chương 2. Sóng", "Bài 10. Sóng dừng", "Mô tả được sóng dừng; xác định được nút, bụng và điều kiện hình thành sóng dừng trên dây.", ["I","V"], {demuc:"Sóng tới và sóng phản xạ | Nút, bụng | Điều kiện sóng dừng"}),
+    physicsLesson("Chương 2. Sóng", "Bài 11. Sóng âm", "Nêu được đặc trưng vật lí, sinh lí của âm; giải thích được một số hiện tượng âm trong đời sống.", ["I","V"], {demuc:"Nguồn âm | Độ cao, độ to | Âm sắc và ứng dụng"}),
+    physicsLesson("Chương 2. Sóng", "Bài 12. Thực hành đo tốc độ truyền âm", "Thực hiện được thí nghiệm đo tốc độ truyền âm; xử lí số liệu và đánh giá sai số.", ["I","V"], {demuc:"Phương án đo | Thu thập dữ liệu | Báo cáo kết quả"}),
+    physicsLesson("Chương 3. Điện trường", "Bài 13. Điện tích. Định luật Coulomb", "Nêu được điện tích, tương tác điện; vận dụng được định luật Coulomb trong trường hợp đơn giản.", ["I","V"], {demuc:"Điện tích | Tương tác điện | Định luật Coulomb"}),
+    physicsLesson("Chương 3. Điện trường", "Bài 14. Điện trường", "Nêu được khái niệm điện trường, cường độ điện trường; mô tả được đường sức điện.", ["I","V"], {demuc:"Điện trường | Cường độ điện trường | Đường sức điện"}),
+    physicsLesson("Chương 3. Điện trường", "Bài 15. Điện thế và hiệu điện thế", "Nêu được điện thế, hiệu điện thế; vận dụng được mối liên hệ giữa công của lực điện và hiệu điện thế.", ["I","V"], {demuc:"Công của lực điện | Điện thế | Hiệu điện thế"}),
+    physicsLesson("Chương 3. Điện trường", "Bài 16. Tụ điện", "Nêu được cấu tạo, điện dung của tụ điện; vận dụng được công thức điện dung và năng lượng tụ điện.", ["I","V"], {demuc:"Tụ điện | Điện dung | Ghép tụ và ứng dụng"}),
+    physicsLesson("Chương 3. Điện trường", "Bài 17. Năng lượng điện trường", "Mô tả được năng lượng điện trường và liên hệ được với tụ điện, ứng dụng tích trữ năng lượng.", ["I","V"], {demuc:"Năng lượng tụ điện | Mật độ năng lượng | Ứng dụng"}),
+    physicsLesson("Chương 4. Dòng điện, mạch điện", "Bài 18. Dòng điện", "Nêu được bản chất dòng điện, cường độ dòng điện; mô tả được điều kiện để có dòng điện.", ["I","V"], {demuc:"Dòng điện | Cường độ dòng điện | Điều kiện có dòng điện"}),
+    physicsLesson("Chương 4. Dòng điện, mạch điện", "Bài 19. Điện trở. Định luật Ohm", "Nêu được điện trở, định luật Ohm; vận dụng được công thức trong mạch điện đơn giản.", ["I","V"], {demuc:"Điện trở | Định luật Ohm | Ghép điện trở"}),
+    physicsLesson("Chương 4. Dòng điện, mạch điện", "Bài 20. Nguồn điện", "Nêu được suất điện động, điện trở trong; vận dụng được kiến thức nguồn điện trong mạch kín.", ["I","V"], {demuc:"Nguồn điện | Suất điện động | Điện trở trong"}),
+    physicsLesson("Chương 4. Dòng điện, mạch điện", "Bài 21. Mạch điện và điện năng tiêu thụ", "Phân tích được mạch điện đơn giản; tính được công suất, điện năng tiêu thụ và hiệu suất sử dụng điện.", ["I","V"], {demuc:"Mạch điện | Công suất điện | Điện năng tiêu thụ"}),
+    physicsLesson("Chương 4. Dòng điện, mạch điện", "Bài 22. Thực hành xác định suất điện động và điện trở trong", "Lắp mạch, đo được số liệu, vẽ đồ thị và xác định suất điện động, điện trở trong của nguồn điện.", ["I","V"], {demuc:"Lắp mạch đo | Xử lí số liệu | Xác định E và r", congcu:"Bảng tính/GeoGebra để vẽ đồ thị U - I và xác định hệ số."}),
+    physicsLesson("Chương 5. Từ trường và cảm ứng điện từ", "Bài 23. Từ trường", "Nêu được khái niệm từ trường, đường sức từ; mô tả được từ trường của nam châm và dòng điện.", ["I","V"], {demuc:"Từ trường | Đường sức từ | Từ trường của dòng điện"}),
+    physicsLesson("Chương 5. Từ trường và cảm ứng điện từ", "Bài 24. Lực từ tác dụng lên dây dẫn mang dòng điện", "Mô tả và vận dụng được lực từ tác dụng lên dây dẫn mang dòng điện trong từ trường.", ["I","V"], {demuc:"Lực từ | Quy tắc bàn tay trái | Ứng dụng"}),
+    physicsLesson("Chương 5. Từ trường và cảm ứng điện từ", "Bài 25. Cảm ứng điện từ", "Nêu được hiện tượng cảm ứng điện từ, từ thông; vận dụng được định luật Faraday trong tình huống đơn giản.", ["I","V"], {demuc:"Từ thông | Hiện tượng cảm ứng điện từ | Định luật Faraday"})
+  ], cd: [
+    physicsLesson("Chuyên đề 1. Trường hấp dẫn", "Bài 1. Trường hấp dẫn", "Nêu được khái niệm trường hấp dẫn, cường độ trường hấp dẫn và liên hệ với trọng trường gần mặt đất.", ["I","V"], {demuc:"Tương tác hấp dẫn | Trường hấp dẫn | Cường độ trường hấp dẫn"}),
+    physicsLesson("Chuyên đề 1. Trường hấp dẫn", "Bài 2. Chuyển động trong trường hấp dẫn", "Mô tả và vận dụng được kiến thức chuyển động trong trường hấp dẫn vào một số tình huống thiên văn, vệ tinh.", ["I","V"], {demuc:"Quỹ đạo | Tốc độ vũ trụ | Chuyển động vệ tinh"}),
+    physicsLesson("Chuyên đề 1. Trường hấp dẫn", "Bài 3. Vệ tinh nhân tạo", "Trình bày được nguyên tắc hoạt động, ứng dụng của vệ tinh nhân tạo và vấn đề rác vũ trụ.", ["I","III"], {demuc:"Vệ tinh nhân tạo | Ứng dụng | Rác vũ trụ và trách nhiệm"}),
+    physicsLesson("Chuyên đề 2. Truyền thông tin bằng sóng vô tuyến", "Bài 4. Sóng điện từ", "Nêu được đặc điểm sóng điện từ, thang sóng điện từ và ứng dụng trong truyền thông.", ["I","V"], {demuc:"Sóng điện từ | Thang sóng điện từ | Ứng dụng"}),
+    physicsLesson("Chuyên đề 2. Truyền thông tin bằng sóng vô tuyến", "Bài 5. Nguyên tắc truyền thông bằng sóng vô tuyến", "Mô tả được nguyên tắc phát, truyền, thu tín hiệu bằng sóng vô tuyến và vai trò của anten.", ["I","V"], {demuc:"Phát tín hiệu | Truyền tín hiệu | Thu tín hiệu"}),
+    physicsLesson("Chuyên đề 2. Truyền thông tin bằng sóng vô tuyến", "Bài 6. Ứng dụng truyền thông không dây", "Phân tích được một số ứng dụng truyền thông không dây và yêu cầu sử dụng công nghệ an toàn, có trách nhiệm.", ["I","III"], {demuc:"Wi-Fi, Bluetooth, 4G/5G | An toàn thông tin | Ứng dụng đời sống"}),
+    physicsLesson("Chuyên đề 3. Mở đầu về điện tử học", "Bài 7. Linh kiện bán dẫn", "Nhận biết được một số linh kiện bán dẫn cơ bản và nêu được vai trò trong mạch điện tử.", ["I","V"], {demuc:"Chất bán dẫn | Diode | Transistor"}),
+    physicsLesson("Chuyên đề 3. Mở đầu về điện tử học", "Bài 8. Mạch điện tử đơn giản", "Lắp ráp hoặc mô phỏng được một mạch điện tử đơn giản; giải thích được chức năng các linh kiện chính.", ["I","V"], {demuc:"Mạch chỉnh lưu | Mạch khuếch đại đơn giản | Mô phỏng mạch", congcu:"Tinkercad Circuits, PhET hoặc phần mềm mô phỏng mạch điện."}),
+    physicsLesson("Chuyên đề 3. Mở đầu về điện tử học", "Bài 9. Cảm biến và ứng dụng", "Tìm hiểu được một số cảm biến phổ biến; đề xuất được ý tưởng ứng dụng cảm biến trong học tập hoặc đời sống.", ["I","V"], {demuc:"Cảm biến | Thu thập tín hiệu | Dự án ứng dụng"})
+  ]},
+  12: { sgk: [
+    physicsLesson("Chương 1. Vật lí nhiệt", "Bài 1. Cấu trúc của chất. Sự chuyển thể", "Mô tả được mô hình động học phân tử; giải thích được một số tính chất của chất rắn, chất lỏng, chất khí và sự chuyển thể.", ["I","V"], {demuc:"Mô hình động học phân tử | Chất rắn, chất lỏng, chất khí | Sự chuyển thể"}),
+    physicsLesson("Chương 1. Vật lí nhiệt", "Bài 2. Nội năng và định luật I nhiệt động lực học", "Nêu được khái niệm nội năng; vận dụng được định luật I nhiệt động lực học trong một số quá trình đơn giản.", ["I","V"], {demuc:"Nội năng | Công và nhiệt lượng | Định luật I nhiệt động lực học"}),
+    physicsLesson("Chương 1. Vật lí nhiệt", "Bài 3. Nhiệt dung riêng. Nhiệt nóng chảy và nhiệt hoá hơi", "Vận dụng được các công thức nhiệt lượng, nhiệt nóng chảy, nhiệt hoá hơi để giải thích và tính toán tình huống thực tiễn.", ["I","V"], {demuc:"Nhiệt dung riêng | Nhiệt nóng chảy | Nhiệt hoá hơi"}),
+    physicsLesson("Chương 2. Khí lí tưởng", "Bài 4. Mô hình khí lí tưởng", "Nêu được mô hình khí lí tưởng; mô tả được các thông số trạng thái và mối liên hệ giữa áp suất, thể tích, nhiệt độ.", ["I","V"], {demuc:"Mô hình khí lí tưởng | Thông số trạng thái | Phương trình trạng thái"}),
+    physicsLesson("Chương 2. Khí lí tưởng", "Bài 5. Các định luật thực nghiệm của chất khí", "Vận dụng được các định luật Boyle, Charles và phương trình trạng thái khí lí tưởng trong bài tập và thí nghiệm.", ["I","V"], {demuc:"Định luật Boyle | Định luật Charles | Vận dụng phương trình trạng thái"}),
+    physicsLesson("Chương 3. Trường từ", "Bài 6. Từ trường", "Nêu được khái niệm từ trường, cảm ứng từ, đường sức từ; mô tả được từ trường của nam châm và dòng điện.", ["I","V"], {demuc:"Từ trường | Cảm ứng từ | Đường sức từ"}),
+    physicsLesson("Chương 3. Trường từ", "Bài 7. Lực từ tác dụng lên dây dẫn và hạt mang điện", "Vận dụng được quy tắc xác định chiều lực từ; giải thích được chuyển động của hạt mang điện trong từ trường.", ["I","V"], {demuc:"Lực từ lên dây dẫn | Lực Lorentz | Ứng dụng"}),
+    physicsLesson("Chương 3. Trường từ", "Bài 8. Cảm ứng điện từ", "Nêu được từ thông, hiện tượng cảm ứng điện từ; vận dụng được định luật Faraday và Lenz trong tình huống đơn giản.", ["I","V"], {demuc:"Từ thông | Cảm ứng điện từ | Định luật Faraday - Lenz"}),
+    physicsLesson("Chương 4. Dòng điện xoay chiều", "Bài 9. Đại cương về dòng điện xoay chiều", "Mô tả được dòng điện xoay chiều; xác định được giá trị hiệu dụng, tần số, pha và biểu diễn bằng đồ thị/hàm số.", ["I","V"], {demuc:"Dòng điện xoay chiều | Giá trị hiệu dụng | Pha và tần số"}),
+    physicsLesson("Chương 4. Dòng điện xoay chiều", "Bài 10. Mạch điện xoay chiều", "Phân tích được mạch xoay chiều đơn giản; vận dụng được kiến thức về điện trở, cuộn cảm, tụ điện trong mạch xoay chiều.", ["I","V"], {demuc:"Mạch R, L, C | Công suất điện xoay chiều | Hệ số công suất"}),
+    physicsLesson("Chương 4. Dòng điện xoay chiều", "Bài 11. Máy biến áp và truyền tải điện năng", "Trình bày được nguyên tắc máy biến áp; giải thích được truyền tải điện năng đi xa và hao phí trên đường dây.", ["I","III"], {demuc:"Máy biến áp | Truyền tải điện năng | Sử dụng điện an toàn, hiệu quả"}),
+    physicsLesson("Chương 5. Vật lí hạt nhân và phóng xạ", "Bài 12. Hạt nhân nguyên tử", "Nêu được cấu tạo hạt nhân, đồng vị, năng lượng liên kết và độ hụt khối ở mức phổ thông.", ["I","V"], {demuc:"Cấu tạo hạt nhân | Đồng vị | Năng lượng liên kết"}),
+    physicsLesson("Chương 5. Vật lí hạt nhân và phóng xạ", "Bài 13. Phóng xạ", "Mô tả được hiện tượng phóng xạ, các loại tia phóng xạ, chu kì bán rã; vận dụng được kiến thức an toàn phóng xạ.", ["I","III"], {demuc:"Hiện tượng phóng xạ | Chu kì bán rã | An toàn phóng xạ"}),
+    physicsLesson("Chương 5. Vật lí hạt nhân và phóng xạ", "Bài 14. Phản ứng hạt nhân và năng lượng hạt nhân", "Nêu được phản ứng phân hạch, nhiệt hạch; phân tích được lợi ích, rủi ro và ứng dụng của năng lượng hạt nhân.", ["I","III"], {demuc:"Phản ứng hạt nhân | Phân hạch, nhiệt hạch | Ứng dụng và an toàn"}),
+    physicsLesson("Chương 6. Vật lí lượng tử", "Bài 15. Lượng tử ánh sáng", "Nêu được khái niệm photon, năng lượng photon; giải thích được hiện tượng quang điện ở mức phổ thông.", ["I","V"], {demuc:"Photon | Năng lượng lượng tử | Hiện tượng quang điện"}),
+    physicsLesson("Chương 6. Vật lí lượng tử", "Bài 16. Quang phổ và ứng dụng", "Mô tả được quang phổ, ứng dụng quang phổ trong phân tích vật chất, thiên văn và công nghệ.", ["I","V"], {demuc:"Quang phổ | Phân tích quang phổ | Ứng dụng"}),
+    physicsLesson("Chương 6. Vật lí lượng tử", "Bài 17. Sơ lược vật lí lượng tử và công nghệ hiện đại", "Nêu được một số ý tưởng cơ bản của vật lí lượng tử và liên hệ với laser, bán dẫn, cảm biến hoặc công nghệ hiện đại.", ["I","III"], {demuc:"Tính lượng tử | Laser, bán dẫn | Ứng dụng công nghệ"})
+  ], cd: [
+    physicsLesson("Chuyên đề 12.1. Dòng điện xoay chiều", "Bài 1. Máy phát điện xoay chiều", "Mô tả được nguyên tắc tạo dòng điện xoay chiều và ứng dụng trong máy phát điện.", ["I","V"], {demuc:"Nguyên tắc cảm ứng điện từ | Máy phát điện | Ứng dụng"}),
+    physicsLesson("Chuyên đề 12.1. Dòng điện xoay chiều", "Bài 2. Truyền tải điện năng và sử dụng điện hiệu quả", "Phân tích được bài toán truyền tải điện năng, hao phí điện năng và giải pháp sử dụng điện an toàn, hiệu quả.", ["I","III"], {demuc:"Hao phí điện năng | Máy biến áp | Sử dụng điện hiệu quả"}),
+    physicsLesson("Chuyên đề 12.2. Một số ứng dụng vật lí trong chẩn đoán y học", "Bài 3. Tia X, siêu âm và cộng hưởng từ", "Trình bày được nguyên tắc vật lí cơ bản của một số kĩ thuật chẩn đoán hình ảnh trong y học.", ["I","III"], {demuc:"Tia X | Siêu âm | Cộng hưởng từ"}),
+    physicsLesson("Chuyên đề 12.2. Một số ứng dụng vật lí trong chẩn đoán y học", "Bài 4. An toàn bức xạ và đạo đức trong chẩn đoán y học", "Nêu được yêu cầu an toàn bức xạ, bảo vệ người bệnh và sử dụng thông tin y học có trách nhiệm.", ["I","III"], {demuc:"An toàn bức xạ | Liều chiếu | Đạo đức và bảo mật thông tin"}),
+    physicsLesson("Chuyên đề 12.3. Vật lí lượng tử", "Bài 5. Hiện tượng quang điện và ứng dụng", "Vận dụng được kiến thức photon, quang điện để giải thích pin quang điện, cảm biến ánh sáng và thiết bị quang điện.", ["I","V"], {demuc:"Photon | Quang điện | Pin quang điện, cảm biến"}),
+    physicsLesson("Chuyên đề 12.3. Vật lí lượng tử", "Bài 6. Laser, bán dẫn và công nghệ lượng tử", "Tìm hiểu được một số ứng dụng của laser, bán dẫn và công nghệ lượng tử trong đời sống, y học, thông tin.", ["I","III"], {demuc:"Laser | Bán dẫn | Công nghệ lượng tử"})
+  ] }
+};
+const VL_CURRICULUM = {
+  10: {
+    overview: "Vật lí 10 tập trung vào mạch cơ học và mở đầu phương pháp học tập Vật lí: mô tả chuyển động, lực và chuyển động, năng lượng, động lượng, chuyển động tròn, biến dạng vật rắn; gắn với đo đạc, thí nghiệm, xử lí sai số và an toàn học tập.",
+    strands: ["Mở đầu", "Động học", "Động lực học", "Công, năng lượng, công suất", "Động lượng", "Chuyển động tròn", "Biến dạng của vật rắn"],
+    topics: ["Chuyên đề 10.1: Vật lí trong một số ngành nghề.", "Chuyên đề 10.2: Trái Đất và bầu trời.", "Chuyên đề 10.3: Vật lí với giáo dục về bảo vệ môi trường."]
+  },
+  11: {
+    overview: "Vật lí 11 tập trung vào trường hấp dẫn, dao động, sóng, trường điện, dòng điện và mạch điện; chú trọng mô hình hóa, đồ thị, thí nghiệm, truyền thông bằng sóng vô tuyến và mở đầu điện tử học.",
+    strands: ["Trường hấp dẫn", "Dao động", "Sóng", "Trường điện (Điện trường)", "Dòng điện, mạch điện"],
+    topics: ["Chuyên đề 11.1: Trường hấp dẫn.", "Chuyên đề 11.2: Truyền thông tin bằng sóng vô tuyến.", "Chuyên đề 11.3: Mở đầu về điện tử học."]
+  },
+  12: {
+    overview: "Vật lí 12 tập trung vào vật lí nhiệt, khí lí tưởng, trường từ, dòng điện xoay chiều, vật lí hạt nhân và phóng xạ, vật lí lượng tử; gắn kiến thức với truyền tải điện, chẩn đoán y học, an toàn bức xạ và công nghệ hiện đại.",
+    strands: ["Vật lí nhiệt", "Khí lí tưởng", "Trường từ (Từ trường)", "Dòng điện xoay chiều", "Vật lí hạt nhân và phóng xạ", "Vật lí lượng tử"],
+    topics: ["Chuyên đề 12.1: Dòng điện xoay chiều.", "Chuyên đề 12.2: Một số ứng dụng vật lí trong chẩn đoán y học.", "Chuyên đề 12.3: Vật lí lượng tử."]
+  }
+};
+function vlCurriculumText(grade=activeGrade()){
+  const c = VL_CURRICULUM[grade] || VL_CURRICULUM[10];
+  return `- Định hướng lớp ${grade}: ${c.overview}
+- Mạch nội dung cốt lõi: ${c.strands.join(" | ")}
+- Chuyên đề học tập: ${c.topics.join(" | ")}`;
+}
+function bioLesson(chuong, bai, mien=["I","V"], extra={}){
+  const topic = bai.replace(/^Bài\s*\d+\.\s*/i, "");
+  return {
+    chuong, bai,
+    ycc: extra.ycc || `Trình bày được kiến thức trọng tâm về ${topic}; phân tích được mối liên hệ giữa cấu trúc và chức năng, cơ chế sinh học hoặc vai trò thực tiễn; vận dụng kiến thức để giải thích hiện tượng sinh học phù hợp với bài học.`,
+    mien,
+    demuc: extra.demuc || "",
+    congcu: extra.congcu || "SGK, tranh/ảnh hiển vi, video/mô phỏng sinh học, bảng tính hoặc công cụ thiết kế sơ đồ tư duy phù hợp.",
+    hoatdong: extra.hoatdong || "HS khai thác SGK/học liệu số, quan sát hình ảnh hoặc mô phỏng, phân tích dữ liệu sinh học, thảo luận và rút ra kết luận.",
+    sanpham: extra.sanpham || "Phiếu học tập, sơ đồ tư duy/bảng so sánh hoặc báo cáo ngắn có hình ảnh, dữ liệu và nhận xét sinh học."
+  };
+}
+function bioList(chuong, baiList, mien=["I","V"]){
+  return baiList.map(bai => bioLesson(chuong, bai, mien));
+}
+const BIO_CURRICULUM = {
+  10: {
+    overview: "Sinh học 10 tập trung vào sinh học tế bào, sinh học vi sinh vật và virus; củng cố cách nhìn tổng quan về thế giới sống, công nghệ tế bào, công nghệ enzyme, công nghệ vi sinh vật và vai trò của sinh học với phát triển bền vững.",
+    strands: [
+      "Mở đầu: đối tượng, lĩnh vực nghiên cứu, vai trò, triển vọng sinh học; phương pháp nghiên cứu và học tập môn Sinh học; các cấp độ tổ chức của thế giới sống.",
+      "Sinh học tế bào: khái quát tế bào; thành phần hoá học; cấu trúc tế bào; trao đổi chất, chuyển hoá năng lượng; thông tin ở tế bào; chu kì tế bào và phân bào.",
+      "Sinh học vi sinh vật và virus: khái niệm, nhóm vi sinh vật, phương pháp nghiên cứu, tổng hợp - phân giải, sinh trưởng - sinh sản, ứng dụng vi sinh vật, virus và ứng dụng."
+    ],
+    topics: [
+      "Chuyên đề 10.1: Công nghệ tế bào và một số thành tựu.",
+      "Chuyên đề 10.2: Công nghệ enzyme và ứng dụng.",
+      "Chuyên đề 10.3: Công nghệ vi sinh vật trong xử lí ô nhiễm môi trường."
+    ]
+  },
+  11: {
+    overview: "Sinh học 11 tập trung vào sinh học cơ thể: trao đổi chất và chuyển hoá năng lượng ở sinh vật, cảm ứng, sinh trưởng - phát triển, sinh sản; gắn kiến thức sinh lí với sức khoẻ, nông nghiệp sạch và an toàn thực phẩm.",
+    strands: [
+      "Trao đổi chất và chuyển hoá năng lượng ở sinh vật: dinh dưỡng, quang hợp, hô hấp, tiêu hoá, tuần hoàn, cân bằng nội môi.",
+      "Cảm ứng ở sinh vật: cảm ứng ở thực vật, cảm ứng ở động vật, tập tính.",
+      "Sinh trưởng, phát triển và sinh sản ở sinh vật; các yếu tố ảnh hưởng và ứng dụng trong đời sống, sản xuất."
+    ],
+    topics: [
+      "Chuyên đề 11.1: Dinh dưỡng khoáng - tăng năng suất cây trồng và nông nghiệp sạch.",
+      "Chuyên đề 11.2: Một số bệnh dịch ở người và cách phòng ngừa, điều trị.",
+      "Chuyên đề 11.3: Vệ sinh an toàn thực phẩm."
+    ]
+  },
+  12: {
+    overview: "Sinh học 12 tập trung vào di truyền học, tiến hoá, sinh thái học và môi trường; chú trọng cơ sở phân tử - nhiễm sắc thể của di truyền, chọn tạo giống, di truyền người, bảo tồn đa dạng sinh học và phát triển bền vững.",
+    strands: [
+      "Di truyền học: di truyền phân tử, di truyền nhiễm sắc thể, di truyền gene ngoài nhân, quan hệ kiểu gene - môi trường - kiểu hình, chọn tạo giống, di truyền quần thể, di truyền học người.",
+      "Tiến hoá: bằng chứng tiến hoá, quan niệm Darwin, thuyết tiến hoá tổng hợp hiện đại, tiến hoá lớn và phát sinh chủng loại.",
+      "Sinh thái học và môi trường: nhân tố sinh thái, quần thể, quần xã, hệ sinh thái, sinh quyển, phục hồi - bảo tồn, kiểm soát sinh học, sinh thái nhân văn."
+    ],
+    topics: [
+      "Chuyên đề 12.1: Sinh học phân tử.",
+      "Chuyên đề 12.2: Kiểm soát sinh học.",
+      "Chuyên đề 12.3: Sinh thái nhân văn."
+    ]
+  }
+};
+function bioCurriculumText(grade=activeGrade()){
+  const c = BIO_CURRICULUM[grade] || BIO_CURRICULUM[10];
+  return `- Định hướng lớp ${grade}: ${c.overview}
+- Mạch nội dung cốt lõi: ${c.strands.join(" | ")}
+- Chuyên đề học tập: ${c.topics.join(" | ")}`;
+}
+const BIO_DATA = {
+  10: { sgk: [
+    ...bioList("Phần mở đầu", [
+      "Bài 1. Giới thiệu khái quát chương trình môn Sinh học",
+      "Bài 2. Các phương pháp nghiên cứu và học tập môn Sinh học",
+      "Bài 3. Các cấp độ tổ chức của thế giới sống"
+    ], ["I","III"]),
+    ...bioList("Chương 1. Thành phần hoá học của tế bào", [
+      "Bài 4. Các nguyên tố hoá học và nước",
+      "Bài 5. Các phân tử sinh học",
+      "Bài 6. Thực hành nhận biết một số phân tử sinh học"
+    ]),
+    ...bioList("Chương 2. Cấu trúc tế bào", [
+      "Bài 7. Tế bào nhân sơ",
+      "Bài 8. Tế bào nhân thực",
+      "Bài 9. Thực hành quan sát tế bào"
+    ]),
+    ...bioList("Chương 3. Trao đổi chất qua màng và chuyển hoá năng lượng ở tế bào", [
+      "Bài 10. Trao đổi chất qua màng tế bào",
+      "Bài 11. Enzyme và vai trò của enzyme",
+      "Bài 12. Hô hấp tế bào",
+      "Bài 13. Quang hợp ở tế bào",
+      "Bài 14. Thực hành thí nghiệm về enzyme và hô hấp tế bào"
+    ]),
+    ...bioList("Chương 4. Chu kì tế bào, phân bào và công nghệ tế bào", [
+      "Bài 15. Chu kì tế bào",
+      "Bài 16. Nguyên phân",
+      "Bài 17. Giảm phân",
+      "Bài 18. Công nghệ tế bào"
+    ]),
+    ...bioList("Chương 5. Vi sinh vật và ứng dụng", [
+      "Bài 19. Khái quát về vi sinh vật",
+      "Bài 20. Sinh trưởng và sinh sản ở vi sinh vật",
+      "Bài 21. Một số ứng dụng của vi sinh vật trong thực tiễn",
+      "Bài 22. Virus và ứng dụng",
+      "Bài 23. Thực hành tìm hiểu một số sản phẩm công nghệ vi sinh"
+    ])
+  ], cd: [
+    bioLesson("Chuyên đề 1. Công nghệ tế bào và một số thành tựu", "Bài 1. Khái quát công nghệ tế bào", ["I","V"]),
+    bioLesson("Chuyên đề 1. Công nghệ tế bào và một số thành tựu", "Bài 2. Nuôi cấy mô tế bào thực vật và ứng dụng", ["I","V"]),
+    bioLesson("Chuyên đề 1. Công nghệ tế bào và một số thành tựu", "Bài 3. Tế bào gốc và triển vọng ứng dụng", ["I","III"]),
+    bioLesson("Chuyên đề 2. Công nghệ enzyme", "Bài 4. Khái quát về enzyme và công nghệ enzyme", ["I","V"]),
+    bioLesson("Chuyên đề 2. Công nghệ enzyme", "Bài 5. Ứng dụng enzyme trong đời sống và sản xuất", ["I","V"]),
+    bioLesson("Chuyên đề 10.3. Công nghệ vi sinh vật trong xử lí ô nhiễm môi trường", "Bài 6. Vi sinh vật trong xử lí ô nhiễm môi trường", ["I","III"]),
+    bioLesson("Chuyên đề 10.3. Công nghệ vi sinh vật trong xử lí ô nhiễm môi trường", "Bài 7. Dự án tìm hiểu ứng dụng vi sinh vật xử lí ô nhiễm tại địa phương", ["I","V"], {congcu:"Google Forms/Sheets để khảo sát, bảng tính để xử lí dữ liệu, Canva/PowerPoint để báo cáo dự án."})
+  ]},
+  11: { sgk: [
+    ...bioList("Chương 1. Trao đổi chất và chuyển hoá năng lượng ở sinh vật", [
+      "Bài 1. Khái quát về trao đổi chất và chuyển hoá năng lượng",
+      "Bài 2. Trao đổi nước và khoáng ở thực vật",
+      "Bài 3. Quang hợp ở thực vật",
+      "Bài 4. Hô hấp ở thực vật",
+      "Bài 5. Dinh dưỡng và tiêu hoá ở động vật",
+      "Bài 6. Hô hấp ở động vật",
+      "Bài 7. Tuần hoàn ở động vật",
+      "Bài 8. Cân bằng nội môi",
+      "Bài 9. Thực hành tìm hiểu trao đổi chất ở sinh vật"
+    ]),
+    ...bioList("Chương 2. Cảm ứng ở sinh vật", [
+      "Bài 10. Khái quát về cảm ứng ở sinh vật",
+      "Bài 11. Cảm ứng ở thực vật",
+      "Bài 12. Cảm ứng ở động vật",
+      "Bài 13. Tập tính ở động vật"
+    ]),
+    ...bioList("Chương 3. Sinh trưởng và phát triển ở sinh vật", [
+      "Bài 14. Khái quát sinh trưởng và phát triển",
+      "Bài 15. Sinh trưởng và phát triển ở thực vật",
+      "Bài 16. Sinh trưởng và phát triển ở động vật",
+      "Bài 17. Các nhân tố ảnh hưởng đến sinh trưởng và phát triển"
+    ]),
+    ...bioList("Chương 4. Sinh sản ở sinh vật", [
+      "Bài 18. Sinh sản ở sinh vật",
+      "Bài 19. Sinh sản ở thực vật",
+      "Bài 20. Sinh sản ở động vật",
+      "Bài 21. Điều hoà sinh sản và ứng dụng"
+    ]),
+    ...bioList("Chương 5. Cơ thể sinh vật là một hệ thống mở và tự điều chỉnh", [
+      "Bài 22. Mối quan hệ giữa các quá trình sinh lí trong cơ thể",
+      "Bài 23. Cơ thể sinh vật và cơ chế tự điều chỉnh"
+    ])
+  ], cd: [
+    bioLesson("Chuyên đề 1. Dinh dưỡng khoáng và tăng năng suất cây trồng", "Bài 1. Dinh dưỡng khoáng ở thực vật", ["I","V"]),
+    bioLesson("Chuyên đề 1. Dinh dưỡng khoáng và tăng năng suất cây trồng", "Bài 2. Phân bón và năng suất cây trồng", ["I","V"]),
+    bioLesson("Chuyên đề 1. Dinh dưỡng khoáng và tăng năng suất cây trồng", "Bài 3. Dự án khảo sát sinh trưởng cây trồng", ["I","V"]),
+    bioLesson("Chuyên đề 2. Một số bệnh dịch ở người và cách phòng chống", "Bài 4. Tác nhân gây bệnh và cơ chế lây truyền", ["I","III"]),
+    bioLesson("Chuyên đề 2. Một số bệnh dịch ở người và cách phòng chống", "Bài 5. Miễn dịch, vaccine và phòng bệnh", ["I","III"]),
+    bioLesson("Chuyên đề 11.3. Vệ sinh an toàn thực phẩm", "Bài 6. Vệ sinh an toàn thực phẩm", ["I","III"]),
+    bioLesson("Chuyên đề 11.3. Vệ sinh an toàn thực phẩm", "Bài 7. Dự án truyền thông về vệ sinh an toàn thực phẩm", ["I","V"], {congcu:"Canva/video ngắn, bảng khảo sát trực tuyến và nguồn thông tin y tế chính thống."})
+  ]},
+  12: { sgk: [
+    ...bioList("Chương 1. Di truyền phân tử", [
+      "Bài 1. Gene và cơ chế truyền thông tin di truyền",
+      "Bài 2. Tái bản DNA, phiên mã và dịch mã",
+      "Bài 3. Điều hoà biểu hiện gene",
+      "Bài 4. Đột biến gene"
+    ]),
+    ...bioList("Chương 2. Di truyền nhiễm sắc thể", [
+      "Bài 5. Nhiễm sắc thể và đột biến nhiễm sắc thể",
+      "Bài 6. Quy luật Mendel",
+      "Bài 7. Tương tác gene và gene đa hiệu",
+      "Bài 8. Liên kết gene, hoán vị gene và di truyền liên kết giới tính",
+      "Bài 9. Di truyền học người"
+    ]),
+    ...bioList("Chương 3. Tiến hoá", [
+      "Bài 10. Bằng chứng và quan niệm về tiến hoá",
+      "Bài 11. Học thuyết tiến hoá tổng hợp hiện đại",
+      "Bài 12. Hình thành loài",
+      "Bài 13. Tiến hoá lớn và phát sinh sự sống"
+    ]),
+    ...bioList("Chương 4. Sinh thái học", [
+      "Bài 14. Môi trường và các nhân tố sinh thái",
+      "Bài 15. Quần thể sinh vật",
+      "Bài 16. Quần xã sinh vật",
+      "Bài 17. Hệ sinh thái",
+      "Bài 18. Sinh quyển, bảo vệ môi trường và phát triển bền vững"
+    ]),
+    ...bioList("Chương 5. Sinh học với phát triển bền vững", [
+      "Bài 19. Công nghệ sinh học và một số ứng dụng",
+      "Bài 20. Đa dạng sinh học và bảo tồn"
+    ], ["I","III"])
+  ], cd: [
+    bioLesson("Chuyên đề 12.1. Sinh học phân tử", "Bài 1. Kĩ thuật DNA tái tổ hợp", ["I","V"]),
+    bioLesson("Chuyên đề 12.1. Sinh học phân tử", "Bài 2. PCR, giải trình tự gene và ứng dụng", ["I","V"]),
+    bioLesson("Chuyên đề 12.1. Sinh học phân tử", "Bài 3. Đạo đức sinh học trong sinh học phân tử", ["I","III"]),
+    bioLesson("Chuyên đề 12.2. Kiểm soát sinh học", "Bài 4. Khái quát về kiểm soát sinh học", ["I","III"]),
+    bioLesson("Chuyên đề 12.2. Kiểm soát sinh học", "Bài 5. Ứng dụng kiểm soát sinh học trong nông nghiệp và môi trường", ["I","III"]),
+    bioLesson("Chuyên đề 12.3. Sinh thái nhân văn", "Bài 6. Sinh thái nhân văn và phát triển bền vững", ["I","V"]),
+    bioLesson("Chuyên đề 12.3. Sinh thái nhân văn", "Bài 7. Dự án tìm hiểu vấn đề sinh thái nhân văn ở địa phương", ["I","V"], {congcu:"Bản đồ số, bảng khảo sát, ảnh thực địa và công cụ trình bày báo cáo dự án."})
+  ]}
+};
+function subjectCurriculumContext(){
+  if(isVL()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN VẬT LÍ\n${vlCurriculumText(activeGrade())}\n`;
+  if(isBIO()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN SINH HỌC\n${bioCurriculumText(activeGrade())}\n`;
+  return "";
+}
 const $ = (id) => document.getElementById(id);
 function activeData(){
   const g = $("selGrade")?.value || "10";
   if(isLS()) return LS_DATA[g] || LS_DATA[10];
+  if(isVL()) return VL_DATA[g] || VL_DATA[10];
+  if(isBIO()) return BIO_DATA[g] || BIO_DATA[10];
   return ({"10": DATA, "11": DATA11, "12": DATA12})[g];
 }
 function activeGrade(){ return $("selGrade")?.value || "10"; }
@@ -1429,8 +1772,8 @@ function refreshGradeLabels(){
   document.querySelector(".brand-text h1").textContent = `Soạn KHBD ${mon} ${grade}`;
   $("selSource").options[0].textContent = `SGK ${mon} ${grade}`;
   $("selSource").options[1].textContent = `Chuyên đề học tập ${mon} ${grade}`;
-  $("selSource").options[1].disabled = isLS();
-  if(isLS() && $("selSource").value === "cd") $("selSource").value = "sgk";
+  $("selSource").options[1].disabled = !(activeData().cd || []).length;
+  if($("selSource").options[1].disabled && $("selSource").value === "cd") $("selSource").value = "sgk";
   document.title = `Soạn KHBD ${mon} ${grade}`;
   ["10","11","12"].forEach((g,i) => { $("selGrade").options[i].textContent = `${mon} ${g}`; });
 }
@@ -1543,7 +1886,7 @@ function createLegacyDeptPlan(){
     return `- ${chapter}\\n${lessonRows}`;
   }).join("\\n");
   const monTen = subjectName();
-  const nangLucDacThuTen = isLS() ? "năng lực lịch sử" : "năng lực hóa học";
+  const nangLucDacThuTen = isLS() ? "năng lực lịch sử" : (isVL() ? "năng lực vật lí" : (isBIO() ? "năng lực sinh học" : "năng lực hóa học"));
   const dinhHuongToChuc = isLS()
     ? "- Tăng cường khai thác tư liệu, sử liệu, bản đồ/lược đồ, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác, khách quan của sử liệu, bản quyền học liệu và an toàn khi tổ chức hoạt động trải nghiệm/thực hành lịch sử."
     : "- Tăng cường thí nghiệm, mô phỏng, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác khoa học, bản quyền học liệu và an toàn khi tổ chức thực hành/thí nghiệm.";
@@ -1613,26 +1956,51 @@ function scheduleRows(lessons){
 }
 function createDeptPlan(){
   const grade = activeGrade();
+  if($("deptSchool")) $("deptSchool").innerHTML = `TRƯỜNG: ........................................<br>Tổ: ${subjectName().toUpperCase()}`;
+  const vlDeptNote = isVL() ? `<br>5. Định hướng chương trình tổng thể: ${esc(VL_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((VL_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
+  const bioDeptNote = isBIO() ? `<br>5. Định hướng chương trình tổng thể: ${esc(BIO_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((BIO_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
+  if($("deptSituation")) $("deptSituation").innerHTML = `1. Số lớp: .... ; Số học sinh: ....
+2. Tình hình đội ngũ: Số giáo viên: .... ; Trình độ đào tạo: ........................................
+3. Thiết bị dạy học: Thống kê thiết bị có thể sử dụng để tổ chức dạy học môn ${subjectName()}.
+4. Phòng học bộ môn/phòng thí nghiệm/phòng đa năng: Thống kê các phòng, không gian có thể sử dụng.${vlDeptNote}${bioDeptNote}`;
   $("deptTitle").innerHTML = `HOẠT ĐỘNG GIÁO DỤC ${subjectName().toUpperCase()} KHỐI LỚP ${grade}<br>(Năm học 2026 - 2027)`;
   const lessons = activeData().sgk || [];
-  $("deptDevices").querySelector("tbody").innerHTML = editableRows(isLS() ? [
+  const deptDeviceRows = isLS() ? [
     [1,"Hệ thống bản đồ, lược đồ lịch sử (thế giới, khu vực, Việt Nam)", "....", "Các bài cần xác định vị trí/diễn biến trên bản đồ", "Bổ sung theo điều kiện thực tế"],
     [2,"Máy chiếu, máy tính, học liệu số, tư liệu/ảnh/video lịch sử", "....", "Các bài cần trực quan hóa hoặc khai thác học liệu số", ""],
     [3,"Phiếu học tập, tư liệu/sử liệu sưu tầm", "....", "Hoạt động vận dụng và trải nghiệm, thực hành lịch sử", ""]
+  ] : isVL() ? [
+    [1,"Bộ thí nghiệm Vật lí theo danh mục nhà trường (cơ học, dao động - sóng, điện, từ)", "....", "Các bài có thí nghiệm, đo đạc, xử lí số liệu", "Bổ sung theo điều kiện thực tế"],
+    [2,"Dụng cụ đo: thước, đồng hồ đo thời gian, lực kế, ampe kế, vôn kế, cảm biến/thiết bị ghi số liệu", "....", "Các bài thực hành và bài học cần đo đại lượng vật lí", ""],
+    [3,"Máy chiếu, máy tính, học liệu số, mô phỏng PhET/GeoGebra, video thí nghiệm", "....", "Các bài cần trực quan hóa, mô phỏng hoặc khai thác học liệu số", ""]
+  ] : isBIO() ? [
+    [1,"Kính hiển vi, lam kính, lamen, mẫu vật/tranh ảnh/mô hình sinh học", "....", "Các bài quan sát tế bào, mô, cơ quan, vi sinh vật hoặc mẫu sinh học", "Bổ sung theo điều kiện thực tế"],
+    [2,"Bộ dụng cụ thực hành Sinh học, hoá chất an toàn, mẫu vật và thiết bị đo môi trường", "....", "Các bài thực hành, dự án điều tra, thí nghiệm sinh lí - sinh thái", ""],
+    [3,"Máy chiếu, máy tính, học liệu số, video/mô phỏng sinh học, cơ sở dữ liệu và bản đồ số", "....", "Các bài cần trực quan hóa quá trình, phân tích dữ liệu hoặc báo cáo dự án", ""]
   ] : [
     [1,"Bộ dụng cụ thí nghiệm và hóa chất theo danh mục nhà trường", "....", "Các bài có thí nghiệm/thực hành", "Bổ sung theo điều kiện thực tế"],
     [2,"Máy chiếu, máy tính, học liệu số, mô phỏng", "....", "Các bài cần trực quan hóa hoặc khai thác học liệu số", ""],
     [3,"Phiếu học tập, vật liệu STEM", "....", "Hoạt động vận dụng và trải nghiệm", ""]
-  ]);
-  $("deptRooms").querySelector("tbody").innerHTML = editableRows(isLS() ? [
+  ];
+  $("deptDevices").querySelector("tbody").innerHTML = editableRows(deptDeviceRows);
+  const deptRoomRows = isLS() ? [
     [1,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác bản đồ số, tư liệu, học liệu số", ""],
     [2,"Thư viện/phòng tư liệu", "....", "Khai thác sử liệu, tư liệu tham khảo", ""],
     [3,"Không gian trải nghiệm/bảo tàng, di tích (nếu có)", "....", "Thực hành lịch sử, tham quan, câu lạc bộ", ""]
+  ] : isVL() ? [
+    [1,"Phòng thực hành bộ môn Vật lí", "....", "Dạy các bài thí nghiệm, thực hành, đo đạc và xử lí số liệu", ""],
+    [2,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác học liệu số, mô phỏng, kiểm tra trực tuyến", ""],
+    [3,"Sân trường/không gian trải nghiệm", "....", "Hoạt động đo đạc thực tế, STEM, câu lạc bộ Vật lí", ""]
+  ] : isBIO() ? [
+    [1,"Phòng thực hành bộ môn Sinh học", "....", "Dạy các bài quan sát mẫu vật, thực hành thí nghiệm, xử lí số liệu sinh học", ""],
+    [2,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác học liệu số, mô phỏng, cơ sở dữ liệu sinh học, kiểm tra trực tuyến", ""],
+    [3,"Vườn trường/không gian trải nghiệm/thực địa địa phương", "....", "Điều tra sinh thái, dự án môi trường, hoạt động STEM Sinh học", ""]
   ] : [
     [1,"Phòng thực hành bộ môn Hóa học", "....", "Dạy các bài thực hành/thí nghiệm", ""],
     [2,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác học liệu số, mô phỏng, kiểm tra trực tuyến", ""],
     [3,"Sân trường/không gian trải nghiệm", "....", "Hoạt động STEM, trải nghiệm, câu lạc bộ", ""]
-  ]);
+  ];
+  $("deptRooms").querySelector("tbody").innerHTML = editableRows(deptRoomRows);
   $("deptDistribution").querySelector("tbody").innerHTML = scheduleRows(lessons);
   const specialistLessons = activeData().cd || [];
   $("deptTopics").querySelector("tbody").innerHTML = editableRows(specialistLessons.map((lesson, index) => {
@@ -1781,7 +2149,7 @@ function buildPaperSkeleton(){
    ====================================================================== */
 const TABLE_OUTPUT_RULE = ` QUY ĐỊNH ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC): chỉ trả về DUY NHẤT mã HTML, bắt đầu ngay từ ký tự đầu tiên bằng <table class="khbd-table">, không thêm chữ giải thích, lời dẫn hay markdown nào trước hoặc sau bảng. Cấu trúc đúng như sau: <table class="khbd-table"><thead><tr><th>Hoạt động của GV và HS</th><th>Sản phẩm dự kiến</th><th>Năng lực số (NLS)</th></tr></thead><tbody><tr><td>...</td><td>...</td><td>...</td></tr></tbody></table>. BẮT BUỘC điền đầy đủ nội dung cho CẢ 3 CỘT của MỌI dòng — tuyệt đối không để cột Sản phẩm dự kiến hoặc Năng lực số (NLS) trống hoặc bỏ dở; viết ngắn gọn, súc tích để đảm bảo hoàn chỉnh hết bảng (kết thúc bằng đúng thẻ </table>) trong giới hạn độ dài cho phép. Trong nội dung mỗi <td>, nếu có nhiều dòng/bước thì nối các dòng bằng thẻ <br> (không dùng \\n, không dùng <li>/<ul>). Cột Năng lực số (NLS) ghi mỗi mã trong một thẻ <span class="nls-badge">mã</span>, nhiều mã nối nhau bằng <br>.`;
 function getSections(){
-  const nangLucDacThu = isLS() ? "Năng lực lịch sử" : "Năng lực hoá học";
+  const nangLucDacThu = isLS() ? "Năng lực lịch sử" : (isVL() ? "Năng lực vật lí" : (isBIO() ? "Năng lực sinh học" : "Năng lực hoá học"));
   return [
   { key:"mucTieu", label:"Mục tiêu",
     ask:`Soạn phần "I. MỤC TIÊU" của KHBD. Trình bày theo 4 mục: 1. Kiến thức; 2. Năng lực, gồm 2.1. Năng lực chung, 2.2. ${nangLucDacThu}, 2.3. Năng lực số; 3. Phẩm chất. Ở mục 2.3 phải nêu rõ mã chỉ báo NLS dạng x.y.NC1a/b và biểu hiện cụ thể gắn với bài học, không chỉ nêu tên miền. Dùng dấu "- " đầu dòng, không dùng markdown (không **, không #). CHỈ trả về văn bản thuần (không dùng thẻ HTML).` },
@@ -1801,7 +2169,11 @@ function getSections(){
 function buildSystemPrompt(){
   const subjectClause = isLS()
     ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Lịch sử THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018 môn Lịch sử (Thông tư 32/2018, cập nhật theo Thông tư 17/2025/TT-BGDĐT). Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ lịch sử/sử học (sử liệu, niên đại, bối cảnh lịch sử, diễn biến, ý nghĩa lịch sử...), tôn trọng sự thật lịch sử, khách quan, không suy diễn chủ quan.`
-    : `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Hoá học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ hoá học phổ thông.`;
+    : isVL()
+      ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Vật lí THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ vật lí phổ thông; chú trọng thí nghiệm, mô hình hóa, xử lí số liệu, đồ thị, giải thích hiện tượng và an toàn phòng thực hành.`
+      : isBIO()
+        ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Sinh học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ sinh học phổ thông; chú trọng quan sát, thực hành, phân tích dữ liệu sinh học, mối liên hệ cấu trúc - chức năng, cơ chế - quá trình, bảo đảm an toàn sinh học và đạo đức sinh học.`
+        : `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Hoá học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ hoá học phổ thông.`;
   return `${subjectClause} Không dùng markdown (không in đậm **, không tiêu đề #). Học sinh lớp ${activeGrade()} tương ứng mức "Nâng cao 1" trong Khung năng lực số (Thông tư 02/2025/TT-BGDĐT, cụ thể hoá tại Phụ lục kèm Công văn 3456/BGDĐT-GDPT): các em xử lý nhiệm vụ/vấn đề đa dạng, có thể tự chủ và hướng dẫn người khác. Khi tích hợp năng lực số, chỉ tích hợp tự nhiên, lồng ghép vào đúng "địa chỉ" của bài học (không thêm hoạt động lan man ngoài nội dung), và phải bám sát các yêu cầu cần đạt (chỉ báo) của từng năng lực thành phần được cung cấp trong ngữ cảnh — không chỉ nêu tên miền chung. Luôn tuân thủ ĐÚNG định dạng đầu ra được yêu cầu trong từng câu hỏi cụ thể (văn bản thuần hoặc mã HTML <table>) và luôn viết đầy đủ, hoàn chỉnh hết bảng/nội dung được yêu cầu — đây là yêu cầu kỹ thuật bắt buộc để hệ thống hiển thị đúng, không được thêm, bớt định dạng hoặc bỏ dở giữa bảng.`;
 }
 
@@ -1926,8 +2298,117 @@ function sgvGuideForLesson_LS(lesson=currentLesson){
   return guide;
 }
 
+function sgvGuideForLesson_VL(lesson=currentLesson){
+  const text = `${lesson?.chuong || ""} ${lesson?.bai || ""} ${lesson?.demuc || ""}`.toLowerCase();
+  const grade = activeGrade();
+  const isPractice = /thực hành|đo|khảo sát|thí nghiệm|xử lí số liệu|sai số/.test(text);
+  const isMechanics = /chuyển động|động học|động lực|newton|lực|ma sát|năng lượng|công|công suất|động lượng|lò xo|biến dạng|rơi tự do/.test(text);
+  const isOscWave = /dao động|sóng|âm|giao thoa|sóng dừng|cộng hưởng/.test(text);
+  const isElectric = /điện|dòng điện|điện trường|coulomb|tụ điện|điện trở|ohm|mạch|nguồn điện|suất điện động/.test(text);
+  const isMagnetic = /từ trường|cảm ứng điện từ|lực từ|faraday|sóng điện từ|vô tuyến/.test(text);
+  const isAstronomy = /trái đất|bầu trời|mặt trời|mặt trăng|thiên thể|hệ mặt trời|vệ tinh|hấp dẫn/.test(text);
+  const isEnvironment = /môi trường|năng lượng|tiết kiệm|tái tạo/.test(text);
+  const guide = {
+    source: `Chương trình GDPT 2018 môn Vật lí và SGV Vật lí ${grade} - dùng như định hướng thiết kế hoạt động, thiết bị, thí nghiệm và đánh giá.`,
+    focus: `${(VL_CURRICULUM[grade] || VL_CURRICULUM[10]).overview} Tổ chức hoạt động theo mạch: nêu hiện tượng/vấn đề - dự đoán - quan sát hoặc thí nghiệm/mô phỏng - xử lí số liệu, đồ thị - rút ra kết luận vật lí - vận dụng.`,
+    devices: ["SGV/SGK Vật lí " + grade, "phiếu học tập", "bảng tiêu chí đánh giá", "máy chiếu hoặc màn hình trình chiếu", "mô phỏng PhET/GeoGebra phù hợp"],
+    methods: ["dự đoán - kiểm chứng", "hoạt động nhóm nhỏ", "phân tích dữ liệu, đồ thị và chuẩn hóa kiến thức"],
+    assessment: ["quan sát quá trình học tập", "phiếu học tập/báo cáo thí nghiệm", "bài tập vận dụng và sản phẩm số"]
+  };
+  if(isPractice){
+    guide.focus = "Ưu tiên tổ chức thí nghiệm thực hành an toàn: nêu mục tiêu đo, lựa chọn dụng cụ, tiến hành đo, ghi bảng số liệu, tính sai số, vẽ đồ thị và viết báo cáo.";
+    guide.devices.push("bộ dụng cụ thí nghiệm theo bài", "thiết bị đo thời gian/độ dài/lực/điện", "bảng tính để xử lí số liệu", "bảng kiểm an toàn thực hành");
+    guide.methods.push("thực hành theo nhóm", "xử lí số liệu và sai số", "báo cáo kết quả bằng bảng/đồ thị");
+    guide.assessment.push("bảng quan sát thao tác thí nghiệm", "báo cáo thực hành có số liệu, sai số và nhận xét");
+  }
+  if(isMechanics){
+    guide.devices.push("xe động lực học, máng nghiêng, lực kế, lò xo, quả nặng, thước đo, đồng hồ đo thời gian", "video phân tích chuyển động");
+    guide.methods.push("phân tích lực bằng sơ đồ", "vẽ và khai thác đồ thị chuyển động", "giải thích hiện tượng cơ học trong đời sống");
+    guide.assessment.push("sơ đồ lực/bảng số liệu/đồ thị chuyển động", "bài tập định lượng gắn tình huống thực tế");
+  }
+  if(isOscWave){
+    guide.devices.push("con lắc lò xo/con lắc đơn, máy phát âm, dây đàn hồi, lò xo sóng, phần mềm phân tích dao động", "mô phỏng dao động và sóng");
+    guide.methods.push("quan sát mô phỏng dao động - sóng", "khai thác đồ thị li độ/thời gian", "so sánh hiện tượng giao thoa, sóng dừng, cộng hưởng");
+    guide.assessment.push("đồ thị dao động/sóng", "phiếu giải thích hiện tượng âm, cộng hưởng hoặc sóng dừng");
+  }
+  if(isElectric){
+    guide.devices.push("nguồn điện, dây nối, công tắc, điện trở, tụ điện, ampe kế, vôn kế, đồng hồ đo điện", "phần mềm mô phỏng mạch điện");
+    guide.methods.push("lắp mạch hoặc mô phỏng mạch", "đo và xử lí số liệu điện", "phân tích quan hệ U - I bằng đồ thị");
+    guide.assessment.push("sơ đồ mạch điện", "bảng số liệu/đồ thị U - I", "bài tập tính toán mạch điện");
+  }
+  if(isMagnetic){
+    guide.devices.push("nam châm, la bàn, dây dẫn, nguồn điện, cuộn dây, mô hình đường sức từ", "video/mô phỏng cảm ứng điện từ hoặc truyền sóng vô tuyến");
+    guide.methods.push("quan sát đường sức từ", "dự đoán chiều lực từ/dòng điện cảm ứng", "liên hệ ứng dụng truyền thông và thiết bị điện");
+    guide.assessment.push("hình vẽ đường sức từ/quy tắc xác định chiều", "bài giải thích ứng dụng cảm ứng điện từ hoặc sóng vô tuyến");
+  }
+  if(isAstronomy){
+    guide.devices.push("la bàn, bản đồ sao, mô phỏng Stellarium/NASA Solar System, bản đồ số", "hình ảnh/video thiên văn đã kiểm chứng nguồn");
+    guide.methods.push("khai thác mô phỏng thiên văn", "xác định phương hướng/bầu trời quan sát", "liên hệ ứng dụng vệ tinh và định vị");
+    guide.assessment.push("bản ghi quan sát/mô phỏng thiên văn", "sơ đồ mô tả hệ Mặt Trời, vệ tinh hoặc trường hấp dẫn");
+  }
+  if(isEnvironment){
+    guide.devices.push("số liệu tiêu thụ điện/năng lượng tại gia đình hoặc trường học", "bảng tính/biểu đồ", "tư liệu về năng lượng tái tạo");
+    guide.methods.push("dự án mini", "phân tích số liệu năng lượng", "đề xuất giải pháp tiết kiệm và bảo vệ môi trường");
+    guide.assessment.push("báo cáo/infographic năng lượng", "đề xuất giải pháp có căn cứ số liệu");
+  }
+  return guide;
+}
+
+function sgvGuideForLesson_BIO(lesson=currentLesson){
+  const text = `${lesson?.chuong || ""} ${lesson?.bai || ""} ${lesson?.demuc || ""}`.toLowerCase();
+  const grade = activeGrade();
+  const isPractice = /thực hành|quan sát|thí nghiệm|dự án|khảo sát|điều tra/.test(text);
+  const isCell = /tế bào|enzyme|hô hấp tế bào|quang hợp|phân bào|vi sinh|virus|phân tử sinh học/.test(text);
+  const isBody = /trao đổi chất|thực vật|động vật|dinh dưỡng|hô hấp|tuần hoàn|cảm ứng|sinh trưởng|phát triển|sinh sản|nội môi/.test(text);
+  const isGenetics = /gene|dna|rna|di truyền|nhiễm sắc thể|mendel|đột biến|công nghệ gene|pcr/.test(text);
+  const isEvolutionEco = /tiến hoá|sinh thái|quần thể|quần xã|hệ sinh thái|môi trường|đa dạng sinh học|bảo tồn|phát triển bền vững/.test(text);
+  const isHealth = /sức khoẻ|bệnh|miễn dịch|vaccine|dinh dưỡng|y học|đạo đức sinh học/.test(text);
+  const guide = {
+    source: `Chương trình GDPT 2018 môn Sinh học và SGV Sinh học ${grade} - dùng như định hướng thiết kế hoạt động, thiết bị, học liệu thực hành và đánh giá.`,
+    focus: `${(BIO_CURRICULUM[grade] || BIO_CURRICULUM[10]).overview} Tổ chức hoạt động theo mạch: nêu hiện tượng/vấn đề sinh học - khai thác hình ảnh, mẫu vật hoặc dữ liệu - phân tích cấu trúc, chức năng, cơ chế - rút ra kết luận - vận dụng vào sức khoẻ, môi trường hoặc sản xuất.`,
+    devices: ["SGV/SGK Sinh học " + grade, "phiếu học tập", "tranh/ảnh, sơ đồ, mô hình sinh học", "máy chiếu hoặc màn hình trình chiếu", "video/mô phỏng sinh học phù hợp"],
+    methods: ["quan sát - phân tích - khái quát hoá", "hoạt động nhóm nhỏ", "khai thác dữ liệu, hình ảnh và học liệu số"],
+    assessment: ["quan sát quá trình học tập", "phiếu học tập/bảng so sánh/sơ đồ tư duy", "bài tập vận dụng và sản phẩm số"]
+  };
+  if(isPractice){
+    guide.focus = "Ưu tiên tổ chức thực hành an toàn: xác định mục tiêu quan sát/điều tra, chuẩn bị mẫu và dụng cụ, thu thập dữ liệu, xử lí kết quả, thảo luận sai lệch và viết báo cáo.";
+    guide.devices.push("kính hiển vi, lam kính, lamen, mẫu vật hoặc tiêu bản", "dụng cụ thực hành Sinh học", "bảng kiểm an toàn sinh học", "bảng tính để xử lí dữ liệu");
+    guide.methods.push("thực hành theo nhóm", "quan sát mẫu vật/tiêu bản", "báo cáo kết quả bằng bảng, ảnh chụp hoặc sơ đồ");
+    guide.assessment.push("bảng quan sát thao tác thực hành", "báo cáo thực hành có hình ảnh, dữ liệu và nhận xét");
+  }
+  if(isCell){
+    guide.devices.push("mô hình tế bào/bào quan", "tranh ảnh hiển vi", "mô phỏng quá trình tế bào", "mẫu sản phẩm vi sinh hoặc video thí nghiệm an toàn");
+    guide.methods.push("so sánh cấu trúc - chức năng", "phân tích sơ đồ quá trình", "giải thích hiện tượng ở cấp tế bào");
+    guide.assessment.push("sơ đồ cấu trúc tế bào/quá trình tế bào", "bảng so sánh tế bào, enzyme, vi sinh vật hoặc virus");
+  }
+  if(isBody){
+    guide.devices.push("mô hình cơ quan/hệ cơ quan", "tranh ảnh sinh lí thực vật, động vật", "số liệu sinh trưởng, hô hấp, quang hợp hoặc sức khoẻ");
+    guide.methods.push("phân tích mối liên hệ cấu trúc - chức năng", "xử lí dữ liệu sinh lí", "liên hệ chăm sóc sức khoẻ/cây trồng/vật nuôi");
+    guide.assessment.push("bảng phân tích cơ chế sinh lí", "sản phẩm vận dụng chăm sóc sức khoẻ hoặc sinh vật");
+  }
+  if(isGenetics){
+    guide.devices.push("mô hình DNA/nhiễm sắc thể", "sơ đồ lai, phả hệ, bản đồ gene", "mô phỏng phiên mã, dịch mã, PCR hoặc cơ sở dữ liệu gene");
+    guide.methods.push("giải bài tập di truyền bằng sơ đồ", "phân tích dữ liệu/phả hệ", "thảo luận đạo đức sinh học");
+    guide.assessment.push("sơ đồ cơ chế di truyền", "bài tập lai/phả hệ", "nhận xét ứng dụng công nghệ gene có căn cứ");
+  }
+  if(isEvolutionEco){
+    guide.devices.push("tranh ảnh hệ sinh thái, bản đồ số, số liệu quần thể/quần xã", "học liệu về đa dạng sinh học địa phương", "công cụ khảo sát và biểu đồ");
+    guide.methods.push("điều tra/khảo sát nhỏ", "phân tích số liệu sinh thái", "dự án bảo tồn hoặc truyền thông môi trường");
+    guide.assessment.push("báo cáo khảo sát sinh thái", "infographic/bản đồ số về đa dạng sinh học hoặc môi trường");
+  }
+  if(isHealth){
+    guide.devices.push("nguồn thông tin y tế chính thống", "sơ đồ cơ chế bệnh, miễn dịch, vaccine", "phiếu khảo sát thói quen sức khoẻ");
+    guide.methods.push("kiểm chứng nguồn thông tin sức khoẻ", "phân tích tình huống", "truyền thông thay đổi hành vi");
+    guide.assessment.push("poster/video truyền thông sức khoẻ", "phiếu kiểm chứng nguồn tin và khuyến nghị an toàn");
+  }
+  return guide;
+}
+
 function sgvGuideForLesson(lesson=currentLesson){
-  return isLS() ? sgvGuideForLesson_LS(lesson) : sgvGuideForLesson_HOA(lesson);
+  if(isLS()) return sgvGuideForLesson_LS(lesson);
+  if(isVL()) return sgvGuideForLesson_VL(lesson);
+  if(isBIO()) return sgvGuideForLesson_BIO(lesson);
+  return sgvGuideForLesson_HOA(lesson);
 }
 
 function sgvGuideText(guide=sgvGuideForLesson()){
@@ -1945,12 +2426,13 @@ function buildContextBlock(){
   const note = $("inpNote").value.trim();
   const ycc = $("txtYccd").value.trim();
   const mienNames = l.mien.map(c => `${c} - ${MIEN_INFO[c].ten}`).join("; ");
-  return `THÔNG TIN BÀI HỌC
-- Môn: Hoá học ${activeGrade()}. ${l.chuong}.
+return `THÔNG TIN BÀI HỌC
+- Môn: ${subjectName()} ${activeGrade()}. ${l.chuong}.
 - Tên bài: ${l.bai}
 - Số tiết: ${tiet}. Lớp dạy: ${lop}.
 - Yêu cầu cần đạt: ${ycc}
 - Đề mục nội dung bài trong SGK: ${l.demuc || "(không có)"}
+${subjectCurriculumContext()}
 
 GỢI Ý TÍCH HỢP NĂNG LỰC SỐ (theo Khung NLS - Thông tư 02/2025/TT-BGDĐT, mức "Nâng cao 1" — lớp 10-12)
 - Miền năng lực số: ${mienNames}
@@ -2031,9 +2513,9 @@ Thực hiện nhiệm vụ: HS suy nghĩ cá nhân, trao đổi nhanh theo cặp
 Báo cáo, thảo luận: Đại diện HS nêu dự đoán, căn cứ và câu hỏi còn băn khoăn.
 Kết luận, nhận định: GV nhận xét, chốt vấn đề học tập và dẫn dắt vào bài.`;
   const hd2Gv = `Giao nhiệm vụ học tập: GV chia nhiệm vụ theo các đề mục SGK, sử dụng kĩ thuật ${variant.technique}, phát phiếu học tập và hướng dẫn nguồn học liệu/công cụ số phù hợp.
-Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, ${isLS() ? "khai thác tư liệu, sử liệu, bản đồ/lược đồ" : "phân tích dữ liệu, quan sát thí nghiệm/mô phỏng"} hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
+Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, ${isLS() ? "khai thác tư liệu, sử liệu, bản đồ/lược đồ" : (isVL() ? "quan sát hiện tượng, thí nghiệm/mô phỏng, đo đạc, phân tích số liệu và đồ thị" : (isBIO() ? "quan sát mẫu vật/hình ảnh, phân tích sơ đồ, dữ liệu sinh học hoặc mô phỏng quá trình sống" : "phân tích dữ liệu, quan sát thí nghiệm/mô phỏng"))} hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
 Báo cáo, thảo luận: Các nhóm trình bày kết quả; nhóm khác nhận xét, bổ sung, đặt câu hỏi và kiểm chứng thông tin.
-Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh ${isLS() ? "sự kiện/niên đại/khái niệm" : "thuật ngữ/công thức"} trọng tâm.
+Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh ${isLS() ? "sự kiện/niên đại/khái niệm" : (isVL() ? "khái niệm, định luật, mô hình, công thức và đơn vị đo" : (isBIO() ? "khái niệm, cơ chế, quá trình, mối liên hệ cấu trúc - chức năng" : "thuật ngữ/công thức"))} trọng tâm.
 ${taskLines}`;
   const hd3Gv = `Giao nhiệm vụ học tập: GV giao câu hỏi/bài tập luyện tập theo cá nhân hoặc nhóm nhỏ.
 Thực hiện nhiệm vụ: HS hoàn thành bài tập, có thể dùng ${variant.digitalTool}, phiếu số hoặc công cụ kiểm tra kết quả theo hướng dẫn.
@@ -2042,15 +2524,23 @@ Kết luận, nhận định: GV chuẩn hóa đáp án, chỉ ra lỗi thườn
   const hd4Gv = `Giao nhiệm vụ học tập: GV giao nhiệm vụ vận dụng có tích hợp năng lực số: ${l.hoatdong}
 Thực hiện nhiệm vụ: HS thực hiện cá nhân/nhóm, thu thập và kiểm chứng thông tin, tạo ${variant.product} bằng công cụ phù hợp.
 Báo cáo, thảo luận: HS nộp/chia sẻ sản phẩm, trình bày nguồn tham khảo và cách kiểm chứng.
-Kết luận, nhận định: GV nhận xét theo tiêu chí: đúng kiến thức ${isLS() ? "lịch sử" : "hoá học"}, nguồn đáng tin cậy, trình bày rõ, sử dụng công cụ số an toàn và có trách nhiệm.`;
+Kết luận, nhận định: GV nhận xét theo tiêu chí: đúng kiến thức ${subjectShort()}, nguồn đáng tin cậy, trình bày rõ, sử dụng công cụ số an toàn và có trách nhiệm.`;
   const nangLucDacThuBlock = isLS()
     ? `2.2. Năng lực lịch sử\n- Tìm hiểu lịch sử: Nhận diện, khai thác và sử dụng được tư liệu/sử liệu liên quan đến bài học.\n- Nhận thức và tư duy lịch sử: Trình bày, giải thích diễn biến, nguyên nhân - kết quả, ý nghĩa của sự kiện/quá trình lịch sử trong bài.\n- Vận dụng kiến thức, kĩ năng đã học: Rút ra bài học lịch sử, liên hệ vận dụng vào vấn đề thực tiễn.`
-    : `2.2. Năng lực hoá học\n- Nhận thức hoá học: Mô tả, giải thích và sử dụng đúng khái niệm, quy luật, công thức trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ hoá học: Quan sát, phân tích dữ liệu, thí nghiệm hoặc mô phỏng để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống gắn với nội dung bài học.`;
+    : isVL()
+      ? `2.2. Năng lực vật lí\n- Nhận thức vật lí: Mô tả, giải thích và sử dụng đúng khái niệm, định luật, mô hình, công thức, đơn vị đo trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ vật lí: Quan sát hiện tượng, thiết kế/thực hiện thí nghiệm hoặc mô phỏng, thu thập và xử lí số liệu, vẽ đồ thị để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống thực tiễn, giải thích hiện tượng và đề xuất phương án kĩ thuật đơn giản phù hợp nội dung bài học.`
+      : isBIO()
+        ? `2.2. Năng lực sinh học\n- Nhận thức sinh học: Mô tả, giải thích và sử dụng đúng khái niệm, cơ chế, quá trình, quy luật sinh học trong bài.\n- Tìm hiểu thế giới sống: Quan sát mẫu vật, hình ảnh, mô hình hoặc mô phỏng; thu thập, xử lí dữ liệu sinh học; rút ra kết luận có căn cứ.\n- Vận dụng kiến thức, kĩ năng đã học: Giải thích hiện tượng sống, liên hệ sức khoẻ, môi trường, sản xuất và đề xuất giải pháp phù hợp.`
+        : `2.2. Năng lực hoá học\n- Nhận thức hoá học: Mô tả, giải thích và sử dụng đúng khái niệm, quy luật, công thức trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ hoá học: Quan sát, phân tích dữ liệu, thí nghiệm hoặc mô phỏng để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống gắn với nội dung bài học.`;
   const map = {
     mucTieu: `1. Kiến thức\n- Trình bày và vận dụng được các nội dung trọng tâm của bài: ${ycc}\n- Liên hệ được kiến thức với hiện tượng, bài tập hoặc tình huống thực tiễn phù hợp với chủ đề "${l.bai}".\n- Bám định hướng SGV: ${sgv.focus}\n\n2. Năng lực\n2.1. Năng lực chung\n- Tự chủ và tự học: Chủ động chuẩn bị bài, khai thác học liệu và hoàn thành nhiệm vụ được giao.\n- Giao tiếp và hợp tác: Thảo luận, trình bày, phản biện kết quả học tập trong nhóm/lớp.\n- Giải quyết vấn đề và sáng tạo: Lựa chọn cách tiếp cận phù hợp để giải quyết nhiệm vụ học tập và tình huống thực tiễn.\n\n${nangLucDacThuBlock}\n\n2.3. Năng lực số tích hợp\n${nlsGoalText()}\n\n3. Phẩm chất\n- Phù hợp với ${classProfile}; điều kiện tổ chức: ${facilities}.\n- Chăm chỉ trong chuẩn bị bài, ghi chép và hoàn thành nhiệm vụ học tập.\n- Trung thực khi xử lí dữ liệu, trích dẫn nguồn và báo cáo kết quả.\n- Trách nhiệm khi hợp tác nhóm, sử dụng thiết bị và công cụ số an toàn.${commonTail}`,
     thietBi: isLS()
       ? `a) Đối với giáo viên\n- SGV và SGK Lịch sử ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; bản đồ/lược đồ, tư liệu, hình ảnh/video lịch sử đã kiểm chứng nguồn phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/tư liệu số khi không đủ điều kiện tham quan thực địa/bảo tàng; bảo đảm trích dẫn nguồn rõ ràng, đáng tin cậy.\n\nb) Đối với học sinh\n- SGK Lịch sử ${activeGrade()}, vở ghi, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin, sử liệu.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
-      : `a) Đối với giáo viên\n- SGV và SGK Hóa học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video/thí nghiệm/mô phỏng phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn khi sử dụng hóa chất, dụng cụ và thiết bị số.\n\nb) Đối với học sinh\n- SGK Hóa học ${activeGrade()}, vở ghi, máy tính cầm tay nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`,
+      : isVL()
+        ? `a) Đối với giáo viên\n- SGV và SGK Vật lí ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video hiện tượng, thí nghiệm, mô phỏng, bảng số liệu và đồ thị phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn điện, cơ học, quang học và an toàn khi dùng thiết bị đo.\n\nb) Đối với học sinh\n- SGK Vật lí ${activeGrade()}, vở ghi, máy tính cầm tay, thước/compa nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi dự đoán hiện tượng, nhiệm vụ đo đạc/xử lí số liệu hoặc tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
+        : isBIO()
+          ? `a) Đối với giáo viên\n- SGV và SGK Sinh học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; tranh/ảnh, mẫu vật, mô hình, video/mô phỏng, bảng dữ liệu sinh học phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn sinh học, vệ sinh phòng thực hành và đạo đức khi khai thác thông tin sức khoẻ/di truyền.\n\nb) Đối với học sinh\n- SGK Sinh học ${activeGrade()}, vở ghi, thiết bị có kết nối Internet khi được GV cho phép, dụng cụ học tập/thực hành theo yêu cầu của GV.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi quan sát, nhiệm vụ thu thập/xử lí dữ liệu sinh học hoặc tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
+          : `a) Đối với giáo viên\n- SGV và SGK Hóa học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video/thí nghiệm/mô phỏng phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn khi sử dụng hóa chất, dụng cụ và thiết bị số.\n\nb) Đối với học sinh\n- SGK Hóa học ${activeGrade()}, vở ghi, máy tính cầm tay nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`,
     hd1: activityTableHtml(hd1Gv, `- Câu trả lời/dự đoán ban đầu của HS.\n- Vấn đề học tập cần giải quyết trong bài "${l.bai}".`, nlsCodes(0, 2)),
     hd2: activityTableHtml(hd2Gv, `- Phiếu học tập hoặc vở ghi hoàn thiện theo từng đề mục.\n- Kết luận kiến thức chính bám sát yêu cầu cần đạt: ${ycc}\n- Minh chứng khai thác/kiểm chứng học liệu số nếu có.`, nlsCodes(1, 3)),
     hd3: activityTableHtml(hd3Gv, `- Bài làm/câu trả lời của HS.\n- 2-3 câu hỏi/bài tập mẫu đã được chữa và tự đánh giá.\n- Kết quả đối chiếu, sửa lỗi sau nhận xét của GV.`, nlsCodes(2, 2)),
@@ -2366,7 +2856,7 @@ function assembleDocument(){
 }
 function plainText(d){
   return [
-    d.title, `Môn: Hoá học ${d.grade} — ${d.bai}`, d.chuong,
+    d.title, `Môn: ${d.subjectLabel || subjectName()} ${d.grade} — ${d.bai}`, d.chuong,
     "Lớp dạy: " + d.lop + "   Số tiết: " + d.tiet + "   Ngày soạn: " + d.ngay,
     "", "I. MỤC TIÊU", d.mucTieu,
     "", "II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU", d.thietBi,
@@ -2393,7 +2883,7 @@ function htmlDoc(d){
   </style></head>
   <body>
   <h2>${esc(d.title)}</h2>
-  <p style="text-align:center;">Môn: Hoá học ${esc(d.grade)} - ${esc(d.bai)}<br>${esc(d.chuong)}</p>
+  <p style="text-align:center;">Môn: ${esc(d.subjectLabel || subjectName())} ${esc(d.grade)} - ${esc(d.bai)}<br>${esc(d.chuong)}</p>
   <p>Lớp dạy: ${esc(d.lop)} &nbsp;&nbsp; Số tiết: ${esc(d.tiet)} &nbsp;&nbsp; Ngày soạn: ${esc(d.ngay)}</p>
   <h3>I. MỤC TIÊU</h3><div>${para(d.mucTieuHtml)}</div>
   <h3>II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</h3><div>${para(d.thietBiHtml)}</div>
@@ -2418,7 +2908,7 @@ $("btnCopy").addEventListener("click", async () => {
 async function downloadTeacherDocx(){
   const d = assembleDocument();
   if(!d) return;
-  downloadWordHtml(teacherExportHtml(d, true), `Ke-hoach-bai-day-Hoa-hoc-${d.grade}.doc`);
+  downloadWordHtml(teacherExportHtml(d, true), `Ke-hoach-bai-day-${subjectSlug()}-${d.grade}.doc`);
   showToast("Đã tạo file Word .doc.");
 }
 function wordCss(){
@@ -2583,7 +3073,7 @@ function tablePayload(id){
 }
 async function downloadDeptDocx(){
   saveDeptPlan(false);
-  downloadWordHtml(deptExportHtml(true), `Ke-hoach-day-hoc-To-Hoa-hoc-${activeGrade()}.doc`);
+  downloadWordHtml(deptExportHtml(true), `Ke-hoach-day-hoc-To-${subjectSlug()}-${activeGrade()}.doc`);
   showToast("Đã tạo file Word .doc Kế hoạch Tổ.");
 }
 function buildDeptExportPayload(){
