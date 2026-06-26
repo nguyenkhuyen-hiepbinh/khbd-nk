@@ -45,6 +45,14 @@
   .access-actions .btn{ flex:1; }
   .access-error{ min-height:18px; margin-top:10px; color:#B5533F; font-size:12.5px; line-height:1.4; }
   .access-note{ margin-top:14px; padding-top:12px; border-top:1px solid #E3ECE5; color:#7A897F; font-size:11.5px; line-height:1.45; }
+  .access-buy{ margin-top:16px; padding-top:14px; border-top:1px solid #E3ECE5; }
+  .btn-link{ background:none; border:none; color:#B5733F; font-size:12.5px; font-weight:700; cursor:pointer; padding:0; text-decoration:underline; }
+  #accessBuyPanel{ margin-top:12px; }
+  #accessBuyPanel input{ margin-bottom:10px; }
+  #accessBuyResult{ margin-top:12px; font-size:12.5px; color:#315247; line-height:1.5; }
+  #accessBuyResult img{ display:block; margin:10px auto; width:200px; height:200px; border:1px solid #E3ECE5; border-radius:8px; }
+  #accessBuyResult .pay-status{ font-weight:700; }
+  #accessBuyResult code{ background:#F1EBDD; padding:2px 6px; border-radius:4px; font-weight:700; }
 
   /* ---------- SIDEBAR ---------- */
   .sidebar{
@@ -398,14 +406,15 @@
 <div class="access-gate" id="accessGate">
   <div class="access-card">
     <h1>KHBD Hóa học</h1>
-    <p>Nhập mật mã được cấp để sử dụng ứng dụng. Mỗi mã nên cấp riêng cho một giáo viên.</p>
-    <label for="accessCodeInput">Mật mã truy cập</label>
-    <input id="accessCodeInput" type="password" autocomplete="one-time-code" placeholder="VD: KHBD-R7M4-Q2XA">
+    <p>Nhập mã truy cập đã được cấp để sử dụng ứng dụng. Mỗi mã dùng cho một giáo viên, hiệu lực 1 năm học.</p>
+    <label for="accessCodeInput">Mã truy cập</label>
+    <input id="accessCodeInput" type="password" autocomplete="one-time-code" placeholder="VD: HTL-AB12CD">
     <div class="access-actions">
       <button class="btn btn-primary" id="btnUnlockApp" type="button">Vào ứng dụng</button>
     </div>
     <div class="access-error" id="accessError"></div>
-    <div class="access-note">Lưu ý: bản web tĩnh chỉ khóa trên trình duyệt. Muốn một mã chỉ dùng được đúng một người trên toàn Internet cần có máy chủ xác thực.</div>
+
+    <div class="access-note">Chưa có mã? Liên hệ người quản lí ứng dụng để được cấp.</div>
   </div>
 </div>
 
@@ -422,6 +431,14 @@
     </div>
 
     <div class="sidebar-section-title">Nội dung bài học</div>
+
+    <div class="field">
+      <label>Môn học</label>
+      <select id="selMon">
+        <option value="hoa">Hóa học</option>
+        <option value="ls">Lịch sử</option>
+      </select>
+    </div>
 
     <div class="field">
       <label>Khối lớp</label>
@@ -627,26 +644,18 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const ACCESS_CODES = [
-  { code:"KHBD-R7M4-Q2XA", user:"GV 01" },
-  { code:"KHBD-Z9T6-L8NC", user:"GV 02" },
-  { code:"KHBD-P3W8-V5RY", user:"GV 03" },
-  { code:"KHBD-K6D2-N9UF", user:"GV 04" },
-  { code:"KHBD-X4H7-C3BQ", user:"GV 05" },
-  { code:"KHBD-M8A5-J2TV", user:"GV 06" },
-  { code:"KHBD-F2Q9-S6LE", user:"GV 07" },
-  { code:"KHBD-C7V3-W8PK", user:"GV 08" },
-  { code:"KHBD-L5N6-A4GX", user:"GV 09" },
-  { code:"KHBD-U9B2-R7MD", user:"GV 10" }
-];
-const ACCESS_SESSION_KEY = "khbd-access-session-v1";
-const ACCESS_DEVICE_KEY = "khbd-access-device-v1";
-const ACCESS_BINDINGS_KEY = "khbd-access-bindings-v1";
+// PAYMENT_SERVER_URL: URL server đã deploy (dùng chung với AI_PROXY_URL bên dưới
+// — khuyến nghị trỏ về cùng 1 server cho cả việc kiểm mã truy cập và gọi AI).
+// Để trống thì app sẽ không kiểm được mã, ai cũng bị từ chối vào ứng dụng.
+const PAYMENT_SERVER_URL = ""; // ví dụ: "https://khbd-ai-proxy.onrender.com"
 
-function getAccessDeviceId(){
+const ACCESS_SESSION_KEY = "khbd-access-session-v2";
+const ACCESS_DEVICE_KEY = "khbd-access-device-v2";
+
+function getDeviceId(){
   let id = localStorage.getItem(ACCESS_DEVICE_KEY);
   if(!id){
-    id = "device-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    id = "dev-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
     localStorage.setItem(ACCESS_DEVICE_KEY, id);
   }
   return id;
@@ -654,16 +663,29 @@ function getAccessDeviceId(){
 function normalizeAccessCode(value){
   return String(value || "").trim().toUpperCase();
 }
-function unlockAppFor(code, user){
-  localStorage.setItem(ACCESS_SESSION_KEY, JSON.stringify({ code, user, unlockedAt:new Date().toISOString() }));
+function unlockAppFor(code){
+  localStorage.setItem(ACCESS_SESSION_KEY, JSON.stringify({ code, unlockedAt:new Date().toISOString() }));
   document.body.classList.remove("access-locked");
 }
-function initAccessGate(){
+async function serverValidateCode(code){
+  if(!PAYMENT_SERVER_URL) return { valid:false, reason:"no_server" };
+  try{
+    const res = await fetch(PAYMENT_SERVER_URL.replace(/\/$/, "") + "/access/validate", {
+      method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ code, deviceId: getDeviceId() }),
+    });
+    return await res.json();
+  }catch(e){
+    return { valid:false, reason:"network_error" };
+  }
+}
+async function initAccessGate(){
   const saved = localStorage.getItem(ACCESS_SESSION_KEY);
   if(saved){
     try{
       const session = JSON.parse(saved);
-      if(ACCESS_CODES.some(item => item.code === session.code)){
+      const check = await serverValidateCode(session.code);
+      if(check.valid){
         document.body.classList.remove("access-locked");
         return;
       }
@@ -672,28 +694,30 @@ function initAccessGate(){
   const input = document.getElementById("accessCodeInput");
   const button = document.getElementById("btnUnlockApp");
   const error = document.getElementById("accessError");
-  const tryUnlock = () => {
+  const tryUnlock = async () => {
     const code = normalizeAccessCode(input.value);
-    const entry = ACCESS_CODES.find(item => item.code === code);
-    if(!entry){
-      error.textContent = "Mã không đúng. Vui lòng kiểm tra lại mật mã được cấp.";
+    if(!code){ error.textContent = "Vui lòng nhập mã truy cập."; return; }
+    button.disabled = true; error.textContent = "Đang kiểm tra…";
+    const check = await serverValidateCode(code);
+    button.disabled = false;
+    if(check.valid){
+      error.textContent = "";
+      unlockAppFor(code);
+    } else {
+      const messages = {
+        no_server: "Chưa cấu hình máy chủ xác thực (PAYMENT_SERVER_URL).",
+        network_error: "Không kết nối được máy chủ xác thực. Kiểm tra mạng và thử lại.",
+        not_found: "Mã không đúng. Vui lòng kiểm tra lại.",
+        revoked: "Mã này đã bị thu hồi.",
+        expired: "Mã đã hết hạn. Liên hệ người quản lí ứng dụng để được gia hạn.",
+        device_mismatch: "Mã này đã được dùng trên một thiết bị/trình duyệt khác. Liên hệ người quản lí ứng dụng nếu bạn cần đổi thiết bị.",
+      };
+      error.textContent = messages[check.reason] || "Mã không hợp lệ.";
       input.focus();
-      return;
     }
-    const deviceId = getAccessDeviceId();
-    const bindings = JSON.parse(localStorage.getItem(ACCESS_BINDINGS_KEY) || "{}");
-    if(bindings[code] && bindings[code] !== deviceId){
-      error.textContent = "Mã này đã được kích hoạt trên một thiết bị khác trong trình duyệt này.";
-      return;
-    }
-    bindings[code] = deviceId;
-    localStorage.setItem(ACCESS_BINDINGS_KEY, JSON.stringify(bindings));
-    unlockAppFor(code, entry.user);
   };
   button.addEventListener("click", tryUnlock);
-  input.addEventListener("keydown", event => {
-    if(event.key === "Enter") tryUnlock();
-  });
+  input.addEventListener("keydown", event => { if(event.key === "Enter") tryUnlock(); });
   setTimeout(() => input.focus(), 100);
 }
 initAccessGate();
@@ -811,6 +835,11 @@ const NLS_DESCRIPTORS = {
              "Nhận xét rủi ro về đạo đức, pháp lý khi sử dụng AI; hướng dẫn người khác sử dụng AI có trách nhiệm." ] },
   ]},
 };
+
+let currentSubject = "hoa"; // "hoa" | "ls"
+function isLS(){ return currentSubject === "ls"; }
+function subjectName(){ return isLS() ? "Lịch sử" : "Hóa học"; }
+function subjectShort(){ return isLS() ? "lịch sử" : "hoá học"; }
 
 const DATA = {
   sgk: [
@@ -1109,17 +1138,301 @@ const DATA12 = {
     grade11Lesson("Chuyên đề 3. Một số vấn đề cơ bản về phức chất", "Bài 9. Vai trò và ứng dụng của phức chất", "Tìm hiểu được vai trò và ứng dụng của phức chất.", ["I","III"])
   ]
 };
+
+/* ============================================================================
+   DỮ LIỆU MÔN LỊCH SỬ — theo SGK/SGV Kết nối tri thức, bản thống nhất 2026
+   (Thông tư 17/2025/TT-BGDĐT). Cấu trúc field giống DATA của Hóa học.
+   Chưa có dữ liệu Chuyên đề học tập (cd) cho Lịch sử ở phiên bản này.
+   ============================================================================ */
+const LS_DATA = {
+
+  10: { sgk: [
+    { chuong:"Chủ đề 1. Lịch sử và Sử học", bai:"Bài 1. Hiện thực lịch sử và lịch sử được con người nhận thức",
+      ycc:"Trình bày được khái niệm lịch sử. Phân biệt được lịch sử hiện thực và lịch sử được con người nhận thức qua ví dụ cụ thể. Giải thích được khái niệm sử học, đối tượng nghiên cứu, chức năng, nhiệm vụ. Nêu được ý nghĩa các nguyên tắc cơ bản của sử học: khách quan, trung thực, tiến bộ. Phân biệt được các nguồn sử liệu. Nêu được một số phương pháp cơ bản của sử học và bước đầu vận dụng qua bài tập đơn giản.",
+      demuc:"I. Lịch sử (1. Lịch sử hiện thực, 2. Lịch sử được con người nhận thức) | II. Sử học (1. Khái niệm, 2. Đối tượng nghiên cứu, 3. Chức năng, nhiệm vụ, 4. Nguyên tắc cơ bản, 5. Nguồn sử liệu, 6. Phương pháp cơ bản)",
+      mien:["I","V"], congcu:"Kho tư liệu số/bảo tàng số; công cụ tìm kiếm có chọn lọc; trợ lí AI hỗ trợ giải thích khái niệm.",
+      hoatdong:"HS tra cứu, phân loại 2-3 nguồn sử liệu (chữ viết, hiện vật, hình ảnh) về một sự kiện lịch sử quen thuộc, đối chiếu độ tin cậy của từng nguồn; dùng AI hỗ trợ giải nghĩa thuật ngữ, tự kiểm chứng lại với SGK.",
+      sanpham:"Phiếu phân loại và đánh giá độ tin cậy của các nguồn sử liệu đã tra cứu." },
+    { chuong:"Chủ đề 1. Lịch sử và Sử học", bai:"Bài 2. Tri thức lịch sử và cuộc sống",
+      ycc:"Nêu được vai trò, ý nghĩa của tri thức lịch sử đối với đời sống cá nhân và xã hội hiện đại qua ví dụ cụ thể. Giải thích được sự cần thiết phải học tập lịch sử suốt đời. Biết cách sưu tầm, thu thập, xử lí thông tin, sử liệu để học tập, khám phá lịch sử. Vận dụng kiến thức, bài học lịch sử để giải thích vấn đề thời sự, thực tiễn ở mức đơn giản.",
+      demuc:"I. Vai trò, ý nghĩa của tri thức lịch sử | II. Học tập và khám phá lịch sử suốt đời (1. Sự cần thiết, 2. Thu thập, xử lí thông tin sử liệu, 3. Kết nối kiến thức lịch sử vào cuộc sống)",
+      mien:["I","III"], congcu:"Công cụ tìm kiếm và lưu trữ tư liệu số (thư viện số, Google Scholar); Padlet/Canva để tổng hợp kết quả; trợ lí AI hỗ trợ tóm tắt.",
+      hoatdong:"HS thu thập tư liệu số về một bài học lịch sử liên quan thời sự hiện nay, dùng AI hỗ trợ tổng hợp, sau đó tự kiểm chứng và trình bày bằng infographic ngắn.",
+      sanpham:"Infographic số liên hệ một bài học lịch sử với một vấn đề thời sự." },
+    { chuong:"Chủ đề 2. Vai trò của Sử học", bai:"Bài 3. Vai trò của Sử học",
+      ycc:"Giải thích được sử học là môn khoa học liên ngành; phân tích được mối liên hệ giữa sử học với các ngành khoa học xã hội, nhân văn, khoa học tự nhiên và công nghệ. Phân tích được mối quan hệ giữa sử học với công tác bảo tồn di sản văn hoá, thiên nhiên, với công nghiệp văn hoá và với du lịch; vận động được người khác cùng tham gia bảo vệ di sản.",
+      demuc:"I. Sử học với các ngành khoa học khác (1. Khoa học xã hội và nhân văn, 2. Khoa học tự nhiên và công nghệ) | II. Sử học với một số lĩnh vực, ngành nghề hiện đại (1. Bảo tồn và phát huy giá trị di sản, 2. Công nghiệp văn hoá, 3. Du lịch)",
+      mien:["I","II"], congcu:"Bản đồ số di sản (Google Maps/Earth); công cụ khảo sát trực tuyến (Google Forms) để vận động bảo vệ di sản; trình chiếu nhóm.",
+      hoatdong:"HS làm việc nhóm trên tài liệu chia sẻ, lập danh sách 2-3 ngành nghề liên quan đến sử học ở địa phương, khảo sát nhanh ý kiến bạn học về một di sản cần bảo tồn, báo cáo bằng slide.",
+      sanpham:"Slide nhóm giới thiệu mối liên hệ giữa sử học và một ngành nghề/di sản cụ thể." },
+    { chuong:"Chủ đề 3. Một số nền văn minh thế giới thời cổ – trung đại", bai:"Bài 4. Khái niệm văn minh. Một số nền văn minh phương Đông thời cổ – trung đại",
+      ycc:"Giải thích được khái niệm văn minh, phân biệt văn minh và văn hoá ở mức cơ bản. Trình bày được sự phát triển của các nền văn minh trên thế giới theo tiến trình lịch sử. Giải thích được cơ sở hình thành và nêu được ý nghĩa thành tựu cơ bản của văn minh Ai Cập, Trung Hoa, Ấn Độ (chữ viết, khoa học, kiến trúc, tư tưởng, tôn giáo,...).",
+      demuc:"I. Khái niệm văn minh | II. Khái quát lịch sử văn minh thế giới | III. Văn minh Ai Cập | IV. Văn minh Trung Hoa | V. Văn minh Ấn Độ",
+      mien:["I","III"], congcu:"Bản đồ/đường thời gian số (Canva Timeline, Tiki-Toki); kho ảnh số bảo tàng (Google Arts & Culture).",
+      hoatdong:"HS chọn một nền văn minh phương Đông, sưu tầm tư liệu số (Google Arts & Culture), dựng đường thời gian số các thành tựu chính, trình bày trước lớp.",
+      sanpham:"Đường thời gian số các thành tựu tiêu biểu của một nền văn minh phương Đông." },
+    { chuong:"Chủ đề 3. Một số nền văn minh thế giới thời cổ – trung đại", bai:"Bài 5. Một số nền văn minh phương Tây thời cổ – trung đại",
+      ycc:"Phân tích được cơ sở hình thành văn minh Hy Lạp – La Mã và nêu được ý nghĩa các thành tựu cơ bản (chữ viết, thiên văn, văn học, nghệ thuật, tư tưởng,...). Phân tích được bối cảnh, tiền đề hình thành Phong trào Văn hoá Phục hưng và nêu được ý nghĩa các thành tựu tiêu biểu.",
+      demuc:"I. Văn minh Hy Lạp – La Mã (1. Cơ sở hình thành, 2. Thành tựu cơ bản) | II. Văn minh thời Phục hưng (1. Bối cảnh lịch sử, 2. Thành tựu cơ bản)",
+      mien:["I","III"], congcu:"Bảo tàng số/ảnh 360° di tích Hy Lạp - La Mã; công cụ trình chiếu Canva/Google Slides.",
+      hoatdong:"HS tra cứu, so sánh một thành tựu của văn minh Hy Lạp – La Mã với một thành tựu thời Phục hưng cùng lĩnh vực (kiến trúc/nghệ thuật/tư tưởng), trình bày bảng so sánh số.",
+      sanpham:"Bảng so sánh số giữa một thành tựu văn minh Hy Lạp – La Mã và thời Phục hưng." },
+    { chuong:"Chủ đề 4. Các cuộc cách mạng công nghiệp trong lịch sử thế giới", bai:"Bài 6. Các cuộc cách mạng công nghiệp thời cận đại",
+      ycc:"Trình bày được bối cảnh lịch sử và thành tựu cơ bản của Cách mạng công nghiệp lần thứ nhất và lần thứ hai. Nêu, phân tích được ý nghĩa và tác động của hai cuộc cách mạng đối với kinh tế, xã hội, văn hoá.",
+      demuc:"I. Cách mạng công nghiệp lần thứ nhất (1. Bối cảnh, 2. Thành tựu) | II. Cách mạng công nghiệp lần thứ hai (1. Bối cảnh, 2. Thành tựu) | III. Ý nghĩa, tác động",
+      mien:["I","V"], congcu:"Sơ đồ tư duy số (Canva/Miro); video tư liệu lịch sử trực tuyến đã được kiểm chứng nguồn.",
+      hoatdong:"HS tra cứu video/tư liệu số về một phát minh tiêu biểu của CMCN 1 hoặc 2, kiểm chứng thông tin với ≥2 nguồn, vẽ sơ đồ tư duy số về tác động kinh tế - xã hội.",
+      sanpham:"Sơ đồ tư duy số về tác động của một phát minh tiêu biểu." },
+    { chuong:"Chủ đề 4. Các cuộc cách mạng công nghiệp trong lịch sử thế giới", bai:"Bài 7. Các cuộc cách mạng công nghiệp thời hiện đại",
+      ycc:"Trình bày được bối cảnh và thành tựu cơ bản của Cách mạng công nghiệp lần thứ ba và lần thứ tư. Phân tích được ý nghĩa, tác động đối với kinh tế, xã hội, văn hoá. Vận dụng hiểu biết về tác động hai mặt của CMCN 3-4 để tuân thủ quy định pháp luật khi giao tiếp trên Internet, mạng xã hội.",
+      demuc:"I. Cách mạng công nghiệp lần thứ ba | II. Cách mạng công nghiệp lần thứ tư (Cách mạng 4.0) | III. Ý nghĩa, tác động",
+      mien:["IV","V"], congcu:"Tư liệu số về CMCN 4.0; bộ quy tắc ứng xử số/an toàn mạng tham khảo.",
+      hoatdong:"HS thảo luận nhóm về một tác động hai mặt của CMCN 4.0 (vd. mạng xã hội, AI), đề xuất quy tắc ứng xử an toàn, có trách nhiệm khi sử dụng; trình bày bằng poster số.",
+      sanpham:"Poster số về quy tắc ứng xử an toàn trước một tác động của CMCN 4.0." },
+    { chuong:"Chủ đề 5. Văn minh Đông Nam Á thời cổ – trung đại", bai:"Bài 8. Hành trình phát triển và thành tựu của văn minh Đông Nam Á thời cổ – trung đại",
+      ycc:"Phân tích được tác động của vị trí địa lí, điều kiện tự nhiên đến sự hình thành văn minh Đông Nam Á; ảnh hưởng của văn hoá Trung Quốc, Ấn Độ. Trình bày được các thời kì phát triển trên đường thời gian. Nêu được thành tựu tiêu biểu (tôn giáo, tín ngưỡng, văn tự, văn học, kiến trúc, điêu khắc). Có ý thức trân trọng, tham gia bảo tồn di sản văn minh Đông Nam Á.",
+      demuc:"I. Cơ sở hình thành (1. Tự nhiên, 2. Xã hội, 3. Ảnh hưởng văn hoá Trung Quốc - Ấn Độ) | II. Hành trình phát triển và thành tựu (1. Các thời kì phát triển, 2. Thành tựu tiêu biểu)",
+      mien:["I","III"], congcu:"Bản đồ số Đông Nam Á; đường thời gian số; ảnh tư liệu di sản khu vực.",
+      hoatdong:"HS xác định trên bản đồ số vị trí 2-3 di sản văn minh Đông Nam Á tiêu biểu (kể cả ở Việt Nam), dựng đường thời gian số các thời kì phát triển, giới thiệu ngắn.",
+      sanpham:"Bản đồ số có ghi chú vị trí di sản kèm đường thời gian phát triển." },
+    { chuong:"Chủ đề 6. Một số nền văn minh trên đất nước Việt Nam (trước năm 1858)", bai:"Bài 9. Một số nền văn minh cổ trên đất nước Việt Nam",
+      ycc:"Nêu được cơ sở hình thành và thành tựu tiêu biểu của văn minh sông Hồng, văn minh Champa, văn minh Phù Nam (đời sống vật chất, tinh thần, tổ chức xã hội, Nhà nước). Có ý thức trân trọng truyền thống lao động, trách nhiệm bảo tồn di sản văn hoá dân tộc.",
+      demuc:"I. Văn minh sông Hồng | II. Văn minh Champa | III. Văn minh Phù Nam",
+      mien:["I","III"], congcu:"Bảo tàng số (Bảo tàng Lịch sử quốc gia online); bản đồ số phân bố di tích; Canva làm infographic.",
+      hoatdong:"HS chọn một trong ba nền văn minh, tra cứu tư liệu số về một thành tựu tiêu biểu, thiết kế infographic giới thiệu kèm trích dẫn nguồn rõ ràng.",
+      sanpham:"Infographic giới thiệu một thành tựu tiêu biểu của văn minh cổ đã chọn." },
+    { chuong:"Chủ đề 6. Một số nền văn minh trên đất nước Việt Nam (trước năm 1858)", bai:"Bài 10. Văn minh Đại Việt",
+      ycc:"Giải thích được khái niệm văn minh Đại Việt và cơ sở hình thành. Nêu được quá trình phát triển trên đường thời gian. Nêu được thành tựu cơ bản về kinh tế, chính trị, tư tưởng, tôn giáo, văn hoá, giáo dục, văn học, nghệ thuật. Nêu được ưu điểm, hạn chế và phân tích ý nghĩa của văn minh Đại Việt trong lịch sử dân tộc.",
+      demuc:"I. Cơ sở hình thành và quá trình phát triển | II. Một số thành tựu (kinh tế, chính trị, tư tưởng - tôn giáo, văn hoá - giáo dục - văn học - nghệ thuật) | III. Ý nghĩa của văn minh Đại Việt",
+      mien:["I","II"], congcu:"Đường thời gian số; Google Docs/Slides dùng chung cho làm việc nhóm; ảnh tư liệu di tích thời Đại Việt.",
+      hoatdong:"HS làm việc nhóm trên tài liệu chia sẻ, mỗi nhóm phụ trách một lĩnh vực thành tựu (kinh tế/chính trị/văn hoá...), tổng hợp thành báo cáo chung của lớp, trình bày trước lớp.",
+      sanpham:"Báo cáo nhóm tổng hợp thành tựu Đại Việt theo lĩnh vực được phân công." },
+    { chuong:"Chủ đề 7. Cộng đồng các dân tộc Việt Nam", bai:"Bài 11. Các dân tộc trên đất nước Việt Nam",
+      ycc:"Nêu được thành phần dân tộc theo dân số. Trình bày được khái niệm ngữ hệ và việc phân chia tộc người theo ngữ hệ.",
+      demuc:"I. Thành phần dân tộc theo dân số | II. Thành phần dân tộc theo ngữ hệ",
+      mien:["I"], congcu:"Cơ sở dữ liệu dân số/dân tộc trực tuyến (Tổng cục Thống kê); bảng tính số liệu (Google Sheets).",
+      hoatdong:"HS tra cứu số liệu dân số các dân tộc trên trang dữ liệu chính thống, nhập và vẽ biểu đồ trên Google Sheets, nhận xét ngắn.",
+      sanpham:"Biểu đồ số liệu thành phần dân tộc kèm nhận xét." },
+    { chuong:"Chủ đề 7. Cộng đồng các dân tộc Việt Nam", bai:"Bài 12. Khái quát về đời sống vật chất và tinh thần của cộng đồng các dân tộc Việt Nam",
+      ycc:"Trình bày được nét chính về đời sống vật chất (sản xuất nông nghiệp, ngành nghề thủ công) và đời sống tinh thần (văn hoá, tôn giáo, tín ngưỡng) của cộng đồng các dân tộc Việt Nam.",
+      demuc:"I. Đời sống vật chất | II. Đời sống tinh thần",
+      mien:["I","III"], congcu:"Ảnh/video tư liệu văn hoá các dân tộc; Canva/Padlet để tổng hợp trưng bày số.",
+      hoatdong:"HS sưu tầm tư liệu số về một nét văn hoá vật chất hoặc tinh thần của một dân tộc cụ thể, dựng một góc trưng bày số (Padlet) chia sẻ với lớp.",
+      sanpham:"Góc trưng bày số (Padlet) giới thiệu một nét văn hoá dân tộc." },
+    { chuong:"Chủ đề 7. Cộng đồng các dân tộc Việt Nam", bai:"Bài 13. Khối đại đoàn kết dân tộc trong lịch sử Việt Nam",
+      ycc:"Nêu được sự hình thành khối đại đoàn kết dân tộc. Phân tích được vai trò của khối đại đoàn kết dân tộc trong lịch sử dựng nước, giữ nước và trong sự nghiệp xây dựng, bảo vệ Tổ quốc hiện nay. Nêu được chính sách dân tộc của Đảng và Nhà nước. Có ý thức trân trọng sự bình đẳng giữa các dân tộc.",
+      demuc:"I. Khối đại đoàn kết dân tộc trong lịch sử Việt Nam | II. Chính sách dân tộc của Đảng và Nhà nước hiện nay",
+      mien:["I","II"], congcu:"Khảo sát trực tuyến (Google Forms); trình chiếu nhóm; tư liệu chính sách dân tộc trên cổng thông tin chính thống.",
+      hoatdong:"HS thực hiện khảo sát nhanh nhận thức của bạn học về một chính sách dân tộc hiện nay, tổng hợp kết quả bằng Google Forms, báo cáo bằng slide.",
+      sanpham:"Báo cáo khảo sát số về nhận thức chính sách dân tộc." },
+  ]},
+
+  11: { sgk: [
+    { chuong:"Chủ đề 1. Cách mạng tư sản và sự phát triển của chủ nghĩa tư bản", bai:"Bài 1. Một số vấn đề chung về cách mạng tư sản",
+      ycc:"Phân tích được tiền đề (kinh tế, chính trị, xã hội, tư tưởng), mục tiêu, nhiệm vụ, giai cấp lãnh đạo, động lực, các loại hình, tính chất, đặc điểm và kết quả, ý nghĩa của cách mạng tư sản qua ví dụ: Cách mạng tư sản Anh, Chiến tranh giành độc lập ở Bắc Mỹ, Cách mạng tư sản Pháp.",
+      demuc:"I. Tiền đề | II. Mục tiêu, nhiệm vụ, giai cấp lãnh đạo, động lực | III. Loại hình, tính chất, đặc điểm | IV. Kết quả, ý nghĩa",
+      mien:["I","V"], congcu:"Bảng so sánh số (Google Sheets/Docs); tư liệu lịch sử số đã kiểm chứng.",
+      hoatdong:"HS lập bảng so sánh số giữa Cách mạng tư sản Anh, Chiến tranh giành độc lập Bắc Mỹ và Cách mạng tư sản Pháp theo các tiêu chí tiền đề - mục tiêu - kết quả, làm việc nhóm trên tài liệu chia sẻ.",
+      sanpham:"Bảng so sánh số ba cuộc cách mạng tư sản tiêu biểu." },
+    { chuong:"Chủ đề 1. Cách mạng tư sản và sự phát triển của chủ nghĩa tư bản", bai:"Bài 2. Sự xác lập và phát triển của chủ nghĩa tư bản",
+      ycc:"Trình bày được sự xác lập chủ nghĩa tư bản ở châu Âu, Bắc Mỹ trên bản đồ/đường thời gian. Giải thích được tầm quan trọng của thuộc địa với chủ nghĩa đế quốc; phân tích sự mở rộng, phát triển và quá trình chuyển từ tự do cạnh tranh sang độc quyền. Giải thích khái niệm, chỉ ra tiềm năng, thách thức của chủ nghĩa tư bản hiện đại.",
+      demuc:"I. Sự xác lập chủ nghĩa tư bản | II. Sự phát triển (chủ nghĩa đế quốc, mở rộng, từ tự do cạnh tranh sang độc quyền) | III. Chủ nghĩa tư bản hiện đại",
+      mien:["I","V"], congcu:"Bản đồ số tương tác; đường thời gian số.",
+      hoatdong:"HS dùng bản đồ số đánh dấu các nước xác lập chủ nghĩa tư bản theo từng giai đoạn, dựng đường thời gian phát triển, nêu nhận xét về tiềm năng - thách thức hiện nay.",
+      sanpham:"Bản đồ số + đường thời gian về sự phát triển của chủ nghĩa tư bản." },
+    { chuong:"Chủ đề 2. Chủ nghĩa xã hội từ năm 1917 đến nay", bai:"Bài 3. Sự hình thành Liên bang Cộng hoà xã hội chủ nghĩa Xô viết",
+      ycc:"Trình bày được bối cảnh lịch sử xuất hiện chủ nghĩa xã hội khoa học. Tóm tắt được nét cơ bản về các nhà sáng lập (K. Marx, F. Engels). Phân tích được quá trình hình thành Nhà nước xã hội chủ nghĩa đầu tiên trên thế giới và nêu được ý nghĩa.",
+      demuc:"I. Bối cảnh lịch sử và sự ra đời của chủ nghĩa xã hội khoa học | II. Sự hình thành Nhà nước xã hội chủ nghĩa đầu tiên trên thế giới",
+      mien:["I"], congcu:"Tư liệu số (trích đoạn văn kiện lịch sử đã được số hoá); công cụ tóm tắt AI.",
+      hoatdong:"HS tra cứu, khai thác một đoạn trích văn kiện lịch sử liên quan, dùng AI hỗ trợ tóm tắt, tự đối chiếu lại với SGK trước khi trình bày.",
+      sanpham:"Bản tóm tắt có trích dẫn nguồn về một luận điểm cơ bản của chủ nghĩa xã hội khoa học." },
+    { chuong:"Chủ đề 2. Chủ nghĩa xã hội từ năm 1917 đến nay", bai:"Bài 4. Sự phát triển của chủ nghĩa xã hội từ sau Chiến tranh thế giới thứ hai đến nay",
+      ycc:"Trình bày được sự phát triển của chủ nghĩa xã hội ở Đông Âu, sự mở rộng ở châu Á và Cuba. Giải thích được nguyên nhân sụp đổ mô hình CNXH ở Đông Âu, Liên Xô. Nêu được ý nghĩa cải cách mở cửa ở Trung Quốc, Đổi mới ở Việt Nam; nêu được thách thức, triển vọng của CNXH hiện nay.",
+      demuc:"I. Sự phát triển sau Chiến tranh thế giới thứ hai | II. Nguyên nhân khủng hoảng, sụp đổ ở Đông Âu, Liên Xô | III. Chủ nghĩa xã hội từ năm 1991 đến nay",
+      mien:["I","V"], congcu:"Đường thời gian số; sơ đồ nguyên nhân - kết quả (Miro/Canva).",
+      hoatdong:"HS dựng sơ đồ nguyên nhân - hệ quả số về sự sụp đổ mô hình CNXH ở Đông Âu, Liên Xô, đối chiếu với quá trình cải cách thành công ở Trung Quốc/Việt Nam để rút ra nhận xét.",
+      sanpham:"Sơ đồ số nguyên nhân - hệ quả kèm nhận xét so sánh." },
+    { chuong:"Chủ đề 3. Quá trình giành độc lập dân tộc của các quốc gia Đông Nam Á", bai:"Bài 5. Quá trình xâm lược và cai trị của chủ nghĩa thực dân ở Đông Nam Á",
+      ycc:"Phân tích được quá trình các nước thực dân phương Tây xâm lược, thiết lập nền thống trị ở Đông Nam Á hải đảo và lục địa. Giải thích được vì sao Xiêm là nước duy nhất ở Đông Nam Á không trở thành thuộc địa.",
+      demuc:"I. Quá trình xâm lược và cai trị của thực dân phương Tây | II. Công cuộc cải cách ở Xiêm",
+      mien:["I"], congcu:"Bản đồ số khu vực Đông Nam Á; tư liệu lịch sử số.",
+      hoatdong:"HS dùng bản đồ số đánh dấu các nước Đông Nam Á và nước thực dân cai trị tương ứng, lí giải bằng ghi chú vì sao Xiêm là trường hợp đặc biệt.",
+      sanpham:"Bản đồ số có ghi chú quá trình xâm lược, cai trị ở Đông Nam Á." },
+    { chuong:"Chủ đề 3. Quá trình giành độc lập dân tộc của các quốc gia Đông Nam Á", bai:"Bài 6. Hành trình đi đến độc lập dân tộc ở Đông Nam Á",
+      ycc:"Tóm tắt được nét chính cuộc đấu tranh chống thực dân ở một số nước Đông Nam Á hải đảo và lục địa. Chỉ ra được các giai đoạn phát triển trên đường thời gian. Giải thích được sự đa dạng của cuộc đấu tranh giành độc lập; đánh giá ảnh hưởng của chế độ thực dân và liên hệ thực tế Việt Nam.",
+      demuc:"I. Phong trào đấu tranh chống thực dân xâm lược | II. Các giai đoạn phát triển | III. Các con đường khác nhau đi đến độc lập | IV. Thời kì tái thiết và phát triển sau độc lập",
+      mien:["I","V"], congcu:"Đường thời gian số tương tác; bản đồ số.",
+      hoatdong:"HS dựng đường thời gian số các giai đoạn đấu tranh giành độc lập ở 2-3 nước Đông Nam Á, liên hệ so sánh ngắn với Việt Nam.",
+      sanpham:"Đường thời gian số quá trình giành độc lập của các nước Đông Nam Á đã chọn." },
+    { chuong:"Chủ đề 4. Chiến tranh bảo vệ Tổ quốc và chiến tranh giải phóng dân tộc trong lịch sử Việt Nam (trước Cách mạng tháng Tám năm 1945)", bai:"Bài 7. Khái quát về chiến tranh bảo vệ Tổ quốc trong lịch sử Việt Nam",
+      ycc:"Đánh giá được vị trí địa chiến lược của Việt Nam. Phân tích được vai trò, ý nghĩa của chiến tranh bảo vệ Tổ quốc trong lịch sử. Xây dựng được bảng tóm tắt nội dung chính các cuộc kháng chiến thắng lợi và không thành công tiêu biểu; giải thích nguyên nhân thắng lợi/không thành công, rút ra bài học lịch sử.",
+      demuc:"I. Vị trí địa chiến lược và vai trò của chiến tranh bảo vệ Tổ quốc | II. Một số cuộc kháng chiến thắng lợi tiêu biểu | III. Một số cuộc kháng chiến không thành công",
+      mien:["I","III"], congcu:"Bảng tóm tắt số (Google Sheets); bản đồ số các trận đánh lớn.",
+      hoatdong:"HS làm việc nhóm xây dựng bảng tóm tắt số (thời gian, đối tượng xâm lược, trận đánh lớn, kết quả) cho 2-3 cuộc kháng chiến, trình bày trên bản đồ số kèm chú giải.",
+      sanpham:"Bảng tóm tắt số kèm bản đồ các cuộc kháng chiến đã chọn." },
+    { chuong:"Chủ đề 4. Chiến tranh bảo vệ Tổ quốc và chiến tranh giải phóng dân tộc trong lịch sử Việt Nam (trước Cách mạng tháng Tám năm 1945)", bai:"Bài 8. Một số cuộc khởi nghĩa và chiến tranh giải phóng trong lịch sử Việt Nam (từ thế kỉ III TCN đến cuối thế kỉ XIX)",
+      ycc:"Xây dựng được bảng tóm tắt nội dung chính các cuộc khởi nghĩa tiêu biểu thời Bắc thuộc. Phân tích được bối cảnh, diễn biến chính, ý nghĩa của khởi nghĩa Lam Sơn và phong trào Tây Sơn trên bản đồ. Rút ra được bài học lịch sử và giá trị đối với sự nghiệp xây dựng, bảo vệ Tổ quốc hiện nay.",
+      demuc:"I. Một số cuộc khởi nghĩa tiêu biểu thời Bắc thuộc | II. Khởi nghĩa Lam Sơn | III. Phong trào Tây Sơn | IV. Một số bài học lịch sử",
+      mien:["I","III"], congcu:"Bản đồ số diễn biến khởi nghĩa; công cụ trình chiếu nhóm.",
+      hoatdong:"HS chọn một cuộc khởi nghĩa, trình bày diễn biến chính trên bản đồ số, thiết kế slide ngắn nêu bài học lịch sử rút ra và liên hệ hiện nay.",
+      sanpham:"Bản đồ số diễn biến kèm slide bài học lịch sử của một cuộc khởi nghĩa đã chọn." },
+    { chuong:"Chủ đề 5. Một số cuộc cải cách lớn trong lịch sử Việt Nam (trước năm 1858)", bai:"Bài 9. Cuộc cải cách của Hồ Quý Ly và triều Hồ",
+      ycc:"Giải thích được khái niệm cải cách. Tóm tắt được bối cảnh lịch sử, nội dung chính và đánh giá ý nghĩa cuộc cải cách của nhà Hồ; nêu được nhận xét về nguyên nhân thất bại trong cải cách và kháng chiến bảo vệ Tổ quốc.",
+      demuc:"I. Khái lược về cải cách | II. Bối cảnh lịch sử | III. Nội dung chính | IV. Kết quả, nguyên nhân thất bại",
+      mien:["I"], congcu:"Sơ đồ nguyên nhân - kết quả số; tư liệu lịch sử số.",
+      hoatdong:"HS dựng sơ đồ số tóm tắt bối cảnh - nội dung - kết quả cuộc cải cách của Hồ Quý Ly, ghi chú nguyên nhân thất bại.",
+      sanpham:"Sơ đồ số tóm tắt cuộc cải cách của Hồ Quý Ly và triều Hồ." },
+    { chuong:"Chủ đề 5. Một số cuộc cải cách lớn trong lịch sử Việt Nam (trước năm 1858)", bai:"Bài 10. Cuộc cải cách của Lê Thánh Tông (thế kỉ XV)",
+      ycc:"Phân tích được bối cảnh lịch sử, nội dung chính và ý nghĩa của cuộc cải cách thời Lê Thánh Tông.",
+      demuc:"I. Bối cảnh lịch sử | II. Nội dung chính | III. Kết quả, ý nghĩa",
+      mien:["I"], congcu:"Sơ đồ số; bảng tóm tắt nội dung cải cách.",
+      hoatdong:"HS lập bảng tóm tắt số nội dung cải cách theo từng lĩnh vực (hành chính, luật pháp, quân sự, kinh tế), nêu ý nghĩa.",
+      sanpham:"Bảng tóm tắt số nội dung và ý nghĩa cuộc cải cách Lê Thánh Tông." },
+    { chuong:"Chủ đề 5. Một số cuộc cải cách lớn trong lịch sử Việt Nam (trước năm 1858)", bai:"Bài 11. Cuộc cải cách của Minh Mạng (nửa đầu thế kỉ XIX)",
+      ycc:"Phân tích được bối cảnh lịch sử, nội dung chính và ý nghĩa của cuộc cải cách thời Minh Mạng. Đánh giá kết quả, nêu bài học kinh nghiệm. Có ý thức trân trọng giá trị của các cuộc cải cách trong lịch sử dân tộc.",
+      demuc:"I. Bối cảnh lịch sử | II. Nội dung chính | III. Kết quả, ý nghĩa, bài học kinh nghiệm",
+      mien:["I","V"], congcu:"Bản đồ hành chính số thời Minh Mạng (nếu có); sơ đồ số.",
+      hoatdong:"HS so sánh số nội dung cải cách Minh Mạng với cải cách Lê Thánh Tông (đã học ở Bài 10) theo 2-3 tiêu chí, rút ra bài học kinh nghiệm chung.",
+      sanpham:"Bảng so sánh số hai cuộc cải cách và bài học kinh nghiệm rút ra." },
+    { chuong:"Chủ đề 6. Lịch sử bảo vệ chủ quyền, các quyền và lợi ích hợp pháp của Việt Nam ở Biển Đông", bai:"Bài 12. Vị trí và tầm quan trọng của Biển Đông",
+      ycc:"Xác định được vị trí Biển Đông và các đảo, quần đảo (Hoàng Sa, Trường Sa) trên bản đồ. Giải thích được tầm quan trọng chiến lược của Biển Đông và của hai quần đảo Hoàng Sa, Trường Sa.",
+      demuc:"I. Vị trí và đặc điểm của Biển Đông | II. Tầm quan trọng chiến lược của Biển Đông | III. Tầm quan trọng chiến lược của các đảo, quần đảo ở Biển Đông",
+      mien:["I"], congcu:"Bản đồ số/GIS (Google Earth) xác định vị trí Biển Đông, Hoàng Sa, Trường Sa.",
+      hoatdong:"HS dùng bản đồ số xác định, đánh dấu vị trí Biển Đông và hai quần đảo Hoàng Sa, Trường Sa, ghi chú tầm quan trọng chiến lược của từng vị trí.",
+      sanpham:"Bản đồ số có chú giải tầm quan trọng chiến lược của Biển Đông." },
+    { chuong:"Chủ đề 6. Lịch sử bảo vệ chủ quyền, các quyền và lợi ích hợp pháp của Việt Nam ở Biển Đông", bai:"Bài 13. Việt Nam và Biển Đông",
+      ycc:"Phân tích được tầm quan trọng của Biển Đông đối với Việt Nam. Giải thích được Việt Nam là Nhà nước đầu tiên xác lập chủ quyền, quản lí liên tục với Hoàng Sa, Trường Sa. Trình bày được tình hình tranh chấp và chủ trương giải quyết bằng biện pháp hoà bình của Việt Nam.",
+      demuc:"I. Tầm quan trọng của Biển Đông đối với Việt Nam | II. Lịch sử bảo vệ chủ quyền với Hoàng Sa, Trường Sa | III. Chủ trương giải quyết tranh chấp bằng biện pháp hoà bình",
+      mien:["I","II"], congcu:"Tư liệu pháp lí số (UNCLOS, Luật Biển Việt Nam) trên cổng thông tin chính thống; trình chiếu nhóm.",
+      hoatdong:"HS tra cứu tư liệu chính thống về một văn bản pháp lí liên quan chủ quyền Biển Đông, tóm tắt nội dung chính, trình bày bằng slide nhóm, nêu cảm nhận trách nhiệm công dân.",
+      sanpham:"Slide nhóm tóm tắt một văn bản pháp lí về chủ quyền Biển Đông của Việt Nam." },
+  ]},
+
+  12: { sgk: [
+    { chuong:"Chủ đề 1. Thế giới trong và sau Chiến tranh lạnh", bai:"Bài 1. Liên hợp quốc",
+      ycc:"Phân tích được bối cảnh lịch sử và quá trình hình thành Liên hợp quốc. Trình bày được mục tiêu, nguyên tắc hoạt động, cơ cấu tổ chức. Nêu, phân tích được vai trò của Liên hợp quốc trong hoà bình - an ninh, phát triển, quyền con người - văn hoá - xã hội. Nêu được đóng góp của Việt Nam đối với Liên hợp quốc.",
+      demuc:"I. Một số vấn đề cơ bản về Liên hợp quốc (lịch sử hình thành, mục tiêu - nguyên tắc, cơ cấu tổ chức) | II. Vai trò của Liên hợp quốc | III. Liên hợp quốc và Việt Nam",
+      mien:["I","V"], congcu:"Cổng thông tin chính thức của Liên hợp quốc (un.org); sơ đồ tổ chức số.",
+      hoatdong:"HS tra cứu trang chính thức của Liên hợp quốc, tổng hợp 2-3 hoạt động/cơ quan liên quan trực tiếp đến Việt Nam, trình bày sơ đồ số.",
+      sanpham:"Sơ đồ số về vai trò/cơ quan của Liên hợp quốc liên quan đến Việt Nam." },
+    { chuong:"Chủ đề 1. Thế giới trong và sau Chiến tranh lạnh", bai:"Bài 2. Trật tự thế giới trong Chiến tranh lạnh",
+      ycc:"Phân tích được sự hình thành và nội dung Trật tự thế giới hai cực Yalta. Nêu được nguyên nhân, phân tích hệ quả và tác động của sự sụp đổ Trật tự hai cực Yalta đối với tình hình thế giới.",
+      demuc:"I. Sự hình thành Trật tự thế giới hai cực Yalta | II. Sự sụp đổ của Trật tự hai cực Yalta",
+      mien:["I","V"], congcu:"Bản đồ số phân chia ảnh hưởng sau 1945; sơ đồ nguyên nhân - hệ quả.",
+      hoatdong:"HS dùng bản đồ số minh hoạ phạm vi ảnh hưởng hai cực Yalta, dựng sơ đồ nguyên nhân - hệ quả sự sụp đổ, thuyết trình ngắn.",
+      sanpham:"Bản đồ số + sơ đồ nguyên nhân - hệ quả về Trật tự hai cực Yalta." },
+    { chuong:"Chủ đề 1. Thế giới trong và sau Chiến tranh lạnh", bai:"Bài 3. Trật tự thế giới sau Chiến tranh lạnh",
+      ycc:"Phân tích được xu thế phát triển chính của thế giới sau Chiến tranh lạnh. Giải thích được vì sao các quốc gia phải điều chỉnh chiến lược phát triển. Trình bày được khái niệm đa cực và giải thích xu thế đa cực trong quan hệ quốc tế; vận dụng để giải thích vấn đề thời sự quốc tế.",
+      demuc:"I. Những chuyển biến của tình hình thế giới sau Chiến tranh lạnh | II. Xu thế đa cực trong quan hệ quốc tế",
+      mien:["I","V"], congcu:"Tin tức thời sự quốc tế đã kiểm chứng nguồn; sơ đồ số.",
+      hoatdong:"HS tra cứu một tin thời sự quốc tế gần đây liên quan xu thế đa cực, đối chiếu ≥2 nguồn tin để kiểm chứng, viết nhận định ngắn liên hệ kiến thức bài học.",
+      sanpham:"Bài viết ngắn liên hệ một sự kiện thời sự với xu thế đa cực." },
+    { chuong:"Chủ đề 2. ASEAN: Những chặng đường lịch sử", bai:"Bài 4. Sự ra đời và phát triển của Hiệp hội các quốc gia Đông Nam Á (ASEAN)",
+      ycc:"Trình bày được quá trình hình thành, mục đích thành lập ASEAN. Phân tích được quá trình phát triển từ ASEAN 5 đến ASEAN 10 và các giai đoạn phát triển chính. Trình bày được cơ cấu tổ chức qua sơ đồ. Chỉ ra được nguyên tắc cơ bản và giải thích phương thức ASEAN (ASEAN Way).",
+      demuc:"I. Quá trình hình thành ASEAN | II. Hành trình phát triển của ASEAN | III. Cơ cấu tổ chức | IV. Nguyên tắc cơ bản và phương thức hoạt động",
+      mien:["I","II"], congcu:"Cổng thông tin chính thức ASEAN (asean.org); sơ đồ tổ chức số.",
+      hoatdong:"HS tra cứu trang chính thức ASEAN, dựng sơ đồ tổ chức số, thảo luận nhóm về một ví dụ áp dụng phương thức ASEAN Way trong thực tế.",
+      sanpham:"Sơ đồ tổ chức số của ASEAN kèm ví dụ về ASEAN Way." },
+    { chuong:"Chủ đề 2. ASEAN: Những chặng đường lịch sử", bai:"Bài 5. Cộng đồng ASEAN: Từ ý tưởng đến hiện thực",
+      ycc:"Nêu được nét chính về ý tưởng, mục tiêu, kế hoạch xây dựng Cộng đồng ASEAN. Phân tích được nội dung ba trụ cột: Cộng đồng Chính trị - An ninh (APSC), Cộng đồng Kinh tế (AEC), Cộng đồng Văn hoá - Xã hội (ASCC). Nêu được thuận lợi, khó khăn của Cộng đồng ASEAN; có ý thức sẵn sàng tham gia các hoạt động xây dựng Cộng đồng ASEAN.",
+      demuc:"I. Ý tưởng và kế hoạch xây dựng Cộng đồng ASEAN | II. Ba trụ cột của Cộng đồng ASEAN | III. Cộng đồng ASEAN sau năm 2015",
+      mien:["I","II"], congcu:"Sơ đồ ba trụ cột số; khảo sát trực tuyến (Google Forms) về nhận thức của HS.",
+      hoatdong:"HS làm việc nhóm trên tài liệu chia sẻ, mỗi nhóm phụ trách một trụ cột, tổng hợp ví dụ thực tế minh hoạ, báo cáo bằng sơ đồ số.",
+      sanpham:"Sơ đồ số ba trụ cột Cộng đồng ASEAN kèm ví dụ thực tế." },
+    { chuong:"Chủ đề 3. Cách mạng tháng Tám năm 1945, chiến tranh giải phóng dân tộc và chiến tranh bảo vệ Tổ quốc trong lịch sử Việt Nam (từ tháng 8 năm 1945 đến nay)", bai:"Bài 6. Cách mạng tháng Tám năm 1945",
+      ycc:"Trình bày được nét khái quát về bối cảnh lịch sử, diễn biến chính của Cách mạng tháng Tám năm 1945. Nêu được nguyên nhân thắng lợi và phân tích được vị trí, ý nghĩa lịch sử của Cách mạng tháng Tám trong tiến trình lịch sử Việt Nam.",
+      demuc:"I. Khái quát về Cách mạng tháng Tám năm 1945 | II. Nguyên nhân thắng lợi, vị trí, ý nghĩa lịch sử",
+      mien:["I"], congcu:"Đường thời gian số diễn biến Cách mạng tháng Tám; tư liệu ảnh/video lịch sử đã kiểm chứng.",
+      hoatdong:"HS dựng đường thời gian số các sự kiện chính của Cách mạng tháng Tám 1945 tại địa phương hoặc cả nước, nêu nhận xét về nguyên nhân thắng lợi.",
+      sanpham:"Đường thời gian số diễn biến Cách mạng tháng Tám năm 1945." },
+    { chuong:"Chủ đề 3. Cách mạng tháng Tám năm 1945, chiến tranh giải phóng dân tộc và chiến tranh bảo vệ Tổ quốc trong lịch sử Việt Nam (từ tháng 8 năm 1945 đến nay)", bai:"Bài 7. Cuộc kháng chiến chống thực dân Pháp (1945 – 1954)",
+      ycc:"Trình bày được nét khái quát về bối cảnh lịch sử, diễn biến chính của cuộc kháng chiến chống thực dân Pháp. Nêu được nguyên nhân thắng lợi và phân tích được vị trí, ý nghĩa lịch sử trong tiến trình lịch sử Việt Nam.",
+      demuc:"I. Khái quát về cuộc kháng chiến chống thực dân Pháp | II. Nguyên nhân thắng lợi, vị trí, ý nghĩa lịch sử",
+      mien:["I","V"], congcu:"Bản đồ số các chiến dịch lớn (Việt Bắc, Biên giới, Điện Biên Phủ); đường thời gian số.",
+      hoatdong:"HS dùng bản đồ số trình bày diễn biến một chiến dịch tiêu biểu (vd. Điện Biên Phủ), kết hợp đường thời gian, rút ra nguyên nhân thắng lợi.",
+      sanpham:"Bản đồ số diễn biến một chiến dịch tiêu biểu kèm nhận xét nguyên nhân thắng lợi." },
+    { chuong:"Chủ đề 3. Cách mạng tháng Tám năm 1945, chiến tranh giải phóng dân tộc và chiến tranh bảo vệ Tổ quốc trong lịch sử Việt Nam (từ tháng 8 năm 1945 đến nay)", bai:"Bài 8. Cuộc kháng chiến chống Mỹ, cứu nước (1954 – 1975)",
+      ycc:"Trình bày được nét khái quát về bối cảnh lịch sử, các giai đoạn phát triển chính của cuộc kháng chiến chống Mỹ, cứu nước. Nêu được nguyên nhân thắng lợi, phân tích vị trí, ý nghĩa lịch sử. Trân trọng, tự hào về truyền thống bất khuất, tham gia công tác đền ơn đáp nghĩa ở địa phương.",
+      demuc:"I. Khái quát về cuộc kháng chiến chống Mỹ, cứu nước | II. Nguyên nhân thắng lợi, vị trí, ý nghĩa lịch sử",
+      mien:["I","V"], congcu:"Đường thời gian số các giai đoạn kháng chiến; tư liệu video lịch sử đã kiểm chứng.",
+      hoatdong:"HS dựng đường thời gian số các giai đoạn chính của cuộc kháng chiến chống Mỹ, liên hệ một hoạt động đền ơn đáp nghĩa thực tế tại địa phương.",
+      sanpham:"Đường thời gian số các giai đoạn kháng chiến chống Mỹ, cứu nước." },
+    { chuong:"Chủ đề 3. Cách mạng tháng Tám năm 1945, chiến tranh giải phóng dân tộc và chiến tranh bảo vệ Tổ quốc trong lịch sử Việt Nam (từ tháng 8 năm 1945 đến nay)", bai:"Bài 9. Cuộc đấu tranh bảo vệ Tổ quốc từ sau tháng 4 năm 1975 đến nay. Một số bài học lịch sử của các cuộc kháng chiến bảo vệ Tổ quốc từ năm 1945 đến nay",
+      ycc:"Trình bày được nét khái quát về bối cảnh, diễn biến chính cuộc đấu tranh bảo vệ Tổ quốc từ sau 4/1975 đến nay; nêu được ý nghĩa lịch sử. Rút ra được những bài học cơ bản (đại nghĩa dân tộc, khối đại đoàn kết, kết hợp sức mạnh dân tộc - thời đại, nghệ thuật lãnh đạo - quân sự) và phân tích giá trị thực tiễn.",
+      demuc:"I. Khái quát về cuộc đấu tranh bảo vệ Tổ quốc từ sau tháng 4-1975 đến nay | II. Ý nghĩa lịch sử | III. Một số bài học lịch sử",
+      mien:["I","V"], congcu:"Bản đồ số khu vực biên giới, Biển Đông; sơ đồ tổng hợp bài học lịch sử.",
+      hoatdong:"HS làm việc nhóm tổng hợp một bài học lịch sử rút ra từ các cuộc kháng chiến bảo vệ Tổ quốc, liên hệ vận dụng vào nhiệm vụ bảo vệ Tổ quốc hiện nay, trình bày sơ đồ số.",
+      sanpham:"Sơ đồ số tổng hợp bài học lịch sử và liên hệ thực tiễn hiện nay." },
+    { chuong:"Chủ đề 4. Công cuộc Đổi mới ở Việt Nam từ năm 1986 đến nay", bai:"Bài 10. Khái quát về công cuộc Đổi mới ở Việt Nam từ năm 1986 đến nay",
+      ycc:"Xây dựng được đường thời gian về các giai đoạn phát triển của công cuộc Đổi mới. Phân tích được đặc điểm về bối cảnh lịch sử, quá trình và phương thức đổi mới ở Việt Nam.",
+      demuc:"I. Khái quát các giai đoạn (1986-1995, 1996-2006, 2007 đến nay) | II. Đặc điểm của công cuộc Đổi mới (bối cảnh, quá trình, phương thức)",
+      mien:["I"], congcu:"Đường thời gian số tương tác; tư liệu số về các kì Đại hội Đảng liên quan.",
+      hoatdong:"HS dựng đường thời gian số 3 giai đoạn của công cuộc Đổi mới, ghi chú đặc điểm nổi bật mỗi giai đoạn.",
+      sanpham:"Đường thời gian số các giai đoạn công cuộc Đổi mới." },
+    { chuong:"Chủ đề 4. Công cuộc Đổi mới ở Việt Nam từ năm 1986 đến nay", bai:"Bài 11. Thành tựu cơ bản và bài học của công cuộc Đổi mới ở Việt Nam từ năm 1986 đến nay",
+      ycc:"Giải thích được công cuộc Đổi mới đưa Việt Nam thoát khỏi khủng hoảng kinh tế - xã hội. Phân tích được sự chuyển đổi mô hình kinh tế, quản lí kinh tế, xây dựng hệ thống chính trị, hội nhập quốc tế, giải quyết vấn đề xã hội - văn hoá - con người. Phân tích được một số bài học kinh nghiệm; có ý thức trân trọng, sẵn sàng đóng góp vào công cuộc Đổi mới.",
+      demuc:"I. Thành tựu cơ bản (kinh tế, chính trị, đối ngoại, xã hội - văn hoá) | II. Một số bài học kinh nghiệm",
+      mien:["I","V"], congcu:"Số liệu kinh tế - xã hội số (Tổng cục Thống kê); biểu đồ số (Google Sheets).",
+      hoatdong:"HS tra cứu một bộ số liệu kinh tế - xã hội trước/sau Đổi mới, vẽ biểu đồ số minh hoạ một thành tựu, nêu bài học kinh nghiệm liên quan.",
+      sanpham:"Biểu đồ số một thành tựu Đổi mới kèm bài học kinh nghiệm." },
+    { chuong:"Chủ đề 5. Lịch sử đối ngoại của Việt Nam thời cận – hiện đại", bai:"Bài 12. Hoạt động đối ngoại của Việt Nam trong đấu tranh giành độc lập dân tộc (đầu thế kỉ XX đến Cách mạng tháng Tám năm 1945)",
+      ycc:"Nêu được nét khái quát về bối cảnh lịch sử và những hoạt động đối ngoại chủ yếu của Việt Nam trong đấu tranh giành độc lập dân tộc giai đoạn đầu thế kỉ XX đến Cách mạng tháng Tám năm 1945.",
+      demuc:"I. Bối cảnh lịch sử | II. Hoạt động đối ngoại chủ yếu",
+      mien:["I"], congcu:"Đường thời gian số hoạt động đối ngoại; tư liệu lịch sử số.",
+      hoatdong:"HS dựng đường thời gian số các hoạt động đối ngoại tiêu biểu giai đoạn này, nêu nhận xét về ý nghĩa.",
+      sanpham:"Đường thời gian số hoạt động đối ngoại Việt Nam giai đoạn 1900-1945." },
+    { chuong:"Chủ đề 5. Lịch sử đối ngoại của Việt Nam thời cận – hiện đại", bai:"Bài 13. Hoạt động đối ngoại của Việt Nam trong kháng chiến chống Pháp (1945 – 1954) và kháng chiến chống Mỹ (1954 – 1975)",
+      ycc:"Nêu được tác động của hoàn cảnh lịch sử đến hoạt động đối ngoại trong hai cuộc kháng chiến. Nêu, đánh giá được những thành tựu chính của hoạt động đối ngoại Việt Nam trong từng giai đoạn.",
+      demuc:"I. Quan hệ đối ngoại trong kháng chiến chống Pháp (1945-1954) | II. Quan hệ đối ngoại trong kháng chiến chống Mỹ (1954-1975)",
+      mien:["I","V"], congcu:"Tư liệu số về các hội nghị quốc tế liên quan (Genève, Paris); sơ đồ số.",
+      hoatdong:"HS tra cứu tư liệu số về một hội nghị/sự kiện đối ngoại tiêu biểu (vd. Hiệp định Genève hoặc Paris), tóm tắt thành tựu chính bằng sơ đồ số.",
+      sanpham:"Sơ đồ số tóm tắt một thành tựu đối ngoại tiêu biểu trong kháng chiến." },
+    { chuong:"Chủ đề 5. Lịch sử đối ngoại của Việt Nam thời cận – hiện đại", bai:"Bài 14. Hoạt động đối ngoại của Việt Nam từ năm 1975 đến nay",
+      ycc:"Sưu tầm, sử dụng được tư liệu để hiểu về quan hệ đối ngoại Việt Nam thời kì Đổi mới. Giải thích được vì sao Việt Nam chủ trương hội nhập quốc tế. Đánh giá được thành tựu, thách thức của đối ngoại Việt Nam thời kì Đổi mới; tự hào về truyền thống ngoại giao của dân tộc.",
+      demuc:"I. Hoàn cảnh lịch sử | II. Chủ trương hội nhập quốc tế | III. Thành tựu và thách thức của đối ngoại thời kì Đổi mới",
+      mien:["I","V"], congcu:"Tư liệu số về các tổ chức quốc tế Việt Nam tham gia; bản đồ quan hệ đối ngoại số.",
+      hoatdong:"HS tra cứu, tổng hợp 2-3 thành tựu đối ngoại nổi bật của Việt Nam từ 1975 đến nay (vd. gia nhập ASEAN, WTO, LHQ), trình bày bằng sơ đồ số kèm trích dẫn nguồn.",
+      sanpham:"Sơ đồ số tổng hợp thành tựu đối ngoại Việt Nam từ năm 1975 đến nay." },
+    { chuong:"Chủ đề 6. Hồ Chí Minh trong lịch sử Việt Nam", bai:"Bài 15. Khái quát cuộc đời và sự nghiệp của Hồ Chí Minh",
+      ycc:"Phân tích được một số yếu tố ảnh hưởng đến cuộc đời, sự nghiệp Hồ Chí Minh. Tóm tắt được nét cơ bản trong tiểu sử. Nêu được tiến trình hoạt động cách mạng của Hồ Chí Minh trên đường thời gian.",
+      demuc:"I. Những yếu tố ảnh hưởng đến cuộc đời và sự nghiệp | II. Tiểu sử | III. Khái quát về sự nghiệp",
+      mien:["I"], congcu:"Đường thời gian số; tư liệu, ảnh số đã kiểm chứng nguồn.",
+      hoatdong:"HS dựng đường thời gian số về tiến trình hoạt động cách mạng của Hồ Chí Minh, kèm trích dẫn nguồn tư liệu rõ ràng.",
+      sanpham:"Đường thời gian số về cuộc đời, sự nghiệp Hồ Chí Minh." },
+    { chuong:"Chủ đề 6. Hồ Chí Minh trong lịch sử Việt Nam", bai:"Bài 16. Hồ Chí Minh – Anh hùng giải phóng dân tộc",
+      ycc:"Giới thiệu được hành trình đi tìm đường cứu nước của Hồ Chí Minh trên bản đồ; phân tích nội dung con đường cứu nước và ý nghĩa. Phân tích được vai trò của Hồ Chí Minh trong việc thành lập Đảng Cộng sản Việt Nam, lãnh đạo Cách mạng tháng Tám 1945 và hai cuộc kháng chiến chống Pháp, chống Mỹ.",
+      demuc:"I. Xác định con đường cứu nước | II. Sáng lập Đảng Cộng sản Việt Nam | III. Lãnh đạo Cách mạng tháng Tám 1945 | IV. Lãnh đạo kháng chiến chống Pháp, chống Mỹ",
+      mien:["I","V"], congcu:"Bản đồ số hành trình tìm đường cứu nước; đường thời gian số.",
+      hoatdong:"HS dùng bản đồ số trình bày hành trình đi tìm đường cứu nước của Hồ Chí Minh, liên kết với một mốc lãnh đạo cách mạng tiêu biểu đã học.",
+      sanpham:"Bản đồ số hành trình tìm đường cứu nước của Hồ Chí Minh." },
+    { chuong:"Chủ đề 6. Hồ Chí Minh trong lịch sử Việt Nam", bai:"Bài 17. Dấu ấn Hồ Chí Minh trong lòng nhân dân thế giới và Việt Nam",
+      ycc:"Giải thích được vì sao nhân dân thế giới đánh giá cao những cống hiến, giá trị tư tưởng - văn hoá của Hồ Chí Minh. Giải thích được vì sao Hồ Chí Minh sống mãi trong lòng dân tộc Việt Nam; có ý thức trân trọng, tích cực tham gia học tập và làm theo tư tưởng, đạo đức, phong cách Hồ Chí Minh.",
+      demuc:"I. Hồ Chí Minh trong lòng nhân dân thế giới | II. Hồ Chí Minh trong lòng nhân dân Việt Nam",
+      mien:["I","III"], congcu:"Tư liệu số bảo tàng/nhà lưu niệm; Canva để thiết kế sản phẩm tuyên truyền.",
+      hoatdong:"HS thiết kế một sản phẩm số ngắn (poster/video ngắn) giới thiệu một hoạt động học tập và làm theo tư tưởng, đạo đức, phong cách Hồ Chí Minh tại trường/địa phương.",
+      sanpham:"Poster hoặc video ngắn giới thiệu một hoạt động học tập và làm theo Hồ Chí Minh." },
+  ]},
+
+};
+const DATA_LS10 = LS_DATA[10], DATA_LS11 = LS_DATA[11], DATA_LS12 = LS_DATA[12];
 const $ = (id) => document.getElementById(id);
-function activeData(){ return ({"10": DATA, "11": DATA11, "12": DATA12})[$("selGrade")?.value || "10"]; }
+function activeData(){
+  const g = $("selGrade")?.value || "10";
+  if(isLS()) return LS_DATA[g] || LS_DATA[10];
+  return ({"10": DATA, "11": DATA11, "12": DATA12})[g];
+}
 function activeGrade(){ return $("selGrade")?.value || "10"; }
 function refreshGradeLabels(){
   const grade = activeGrade();
+  const mon = subjectName();
   document.querySelector(".brand-tile").textContent = grade;
-  document.querySelector(".brand-text h1").textContent = `Soạn KHBD Hóa ${grade}`;
-  $("selSource").options[0].textContent = `SGK Hóa học ${grade}`;
-  $("selSource").options[1].textContent = `Chuyên đề học tập Hóa học ${grade}`;
-  document.title = `Soạn KHBD Hóa học ${grade}`;
-  document.querySelector(".brand-text h1").textContent = `Soạn KHBD Hóa ${grade}`;
+  document.querySelector(".brand-text h1").textContent = `Soạn KHBD ${mon} ${grade}`;
+  $("selSource").options[0].textContent = `SGK ${mon} ${grade}`;
+  $("selSource").options[1].textContent = `Chuyên đề học tập ${mon} ${grade}`;
+  $("selSource").options[1].disabled = isLS();
+  if(isLS() && $("selSource").value === "cd") $("selSource").value = "sgk";
+  document.title = `Soạn KHBD ${mon} ${grade}`;
+  ["10","11","12"].forEach((g,i) => { $("selGrade").options[i].textContent = `${mon} ${g}`; });
 }
 const STORAGE_KEY = "khbd-hoa10-draft-v2";
 const DEPT_STORAGE_KEY = "khbd-hoa10-department-plan-v2";
@@ -1217,7 +1530,7 @@ function loadDeptPlan(show=false){
   return Boolean(isCurrentTemplate);
 }
 function createLegacyDeptPlan(){
-  const deptName = $("inpDeptName")?.value.trim() || "Tổ Hóa học";
+  const deptName = $("inpDeptName")?.value.trim() || `Tổ ${subjectName()}`;
   const schoolYear = $("inpSchoolYear")?.value.trim() || "Năm học ............";
   const source = $("selSource").value;
   const lessons = DATA[source] || [];
@@ -1229,7 +1542,12 @@ function createLegacyDeptPlan(){
     const lessonRows = items.map((item, index) => `  ${index + 1}. ${item.bai} (${item.mien.join(", ")})`).join("\\n");
     return `- ${chapter}\\n${lessonRows}`;
   }).join("\\n");
-  const plan = `KẾ HOẠCH GIÁO DỤC MÔN HÓA HỌC 10\\n${deptName}\\n${schoolYear}\\n\\n1. Mục tiêu chung\\n- Thực hiện Chương trình GDPT 2018 môn Hóa học 10; bảo đảm yêu cầu cần đạt, phát triển năng lực hóa học, năng lực chung và phẩm chất học sinh.\\n- Tích hợp năng lực số ở mức Nâng cao 1 phù hợp từng bài học; ưu tiên nhiệm vụ tìm kiếm, kiểm chứng, tạo sản phẩm số và sử dụng công cụ số an toàn, có trách nhiệm.\\n- Thống nhất sử dụng kế hoạch bài dạy theo Công văn 5512; giáo viên được điều chỉnh tình huống, phương pháp, câu hỏi, sản phẩm và mức độ phân hóa theo lớp phụ trách.\\n\\n2. Định hướng tổ chức dạy học\\n- Tăng cường thí nghiệm, mô phỏng, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác khoa học, bản quyền học liệu và an toàn khi tổ chức thực hành/thí nghiệm.\\n\\n3. Phân phối nội dung đề xuất\\n${distribution}\\n\\n4. Kiểm tra, đánh giá\\n- Đánh giá thường xuyên bằng quan sát, hỏi đáp, phiếu học tập, sản phẩm học tập và tự/đánh giá đồng đẳng.\\n- Đánh giá định kì thực hiện theo kế hoạch nhà trường; ma trận và đặc tả được tổ thống nhất trước khi triển khai.\\n\\n5. Thống nhất chuyên môn\\n- Dùng các mã chỉ báo NLS x.y.NC1a/b đúng với nhiệm vụ số của bài; không gắn mã hình thức.\\n- Họp tổ rà soát tiến độ, học liệu, thiết bị và điều chỉnh kế hoạch khi có thay đổi thực tế.\\n\\nGhi chú: Đây là bản khung do ứng dụng tạo. Tổ chuyên môn bổ sung tuần dạy, số tiết thực tế, chuyên đề, kế hoạch kiểm tra và các yêu cầu riêng của nhà trường trước khi ban hành.`;
+  const monTen = subjectName();
+  const nangLucDacThuTen = isLS() ? "năng lực lịch sử" : "năng lực hóa học";
+  const dinhHuongToChuc = isLS()
+    ? "- Tăng cường khai thác tư liệu, sử liệu, bản đồ/lược đồ, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác, khách quan của sử liệu, bản quyền học liệu và an toàn khi tổ chức hoạt động trải nghiệm/thực hành lịch sử."
+    : "- Tăng cường thí nghiệm, mô phỏng, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác khoa học, bản quyền học liệu và an toàn khi tổ chức thực hành/thí nghiệm.";
+  const plan = `KẾ HOẠCH GIÁO DỤC MÔN ${monTen.toUpperCase()} ${activeGrade()}\\n${deptName}\\n${schoolYear}\\n\\n1. Mục tiêu chung\\n- Thực hiện Chương trình GDPT 2018 môn ${monTen} ${activeGrade()}; bảo đảm yêu cầu cần đạt, phát triển ${nangLucDacThuTen}, năng lực chung và phẩm chất học sinh.\\n- Tích hợp năng lực số ở mức Nâng cao 1 phù hợp từng bài học; ưu tiên nhiệm vụ tìm kiếm, kiểm chứng, tạo sản phẩm số và sử dụng công cụ số an toàn, có trách nhiệm.\\n- Thống nhất sử dụng kế hoạch bài dạy theo Công văn 5512; giáo viên được điều chỉnh tình huống, phương pháp, câu hỏi, sản phẩm và mức độ phân hóa theo lớp phụ trách.\\n\\n2. Định hướng tổ chức dạy học\\n${dinhHuongToChuc}\\n\\n3. Phân phối nội dung đề xuất\\n${distribution}\\n\\n4. Kiểm tra, đánh giá\\n- Đánh giá thường xuyên bằng quan sát, hỏi đáp, phiếu học tập, sản phẩm học tập và tự/đánh giá đồng đẳng.\\n- Đánh giá định kì thực hiện theo kế hoạch nhà trường; ma trận và đặc tả được tổ thống nhất trước khi triển khai.\\n\\n5. Thống nhất chuyên môn\\n- Dùng các mã chỉ báo NLS x.y.NC1a/b đúng với nhiệm vụ số của bài; không gắn mã hình thức.\\n- Họp tổ rà soát tiến độ, học liệu, thiết bị và điều chỉnh kế hoạch khi có thay đổi thực tế.\\n\\nGhi chú: Đây là bản khung do ứng dụng tạo. Tổ chuyên môn bổ sung tuần dạy, số tiết thực tế, chuyên đề, kế hoạch kiểm tra và các yêu cầu riêng của nhà trường trước khi ban hành.`;
   $("txtDeptPlan").value = plan;
   saveDeptPlan(false);
   scheduleDraftSave();
@@ -1295,14 +1613,22 @@ function scheduleRows(lessons){
 }
 function createDeptPlan(){
   const grade = activeGrade();
-  $("deptTitle").innerHTML = `HOẠT ĐỘNG GIÁO DỤC HÓA HỌC KHỐI LỚP ${grade}<br>(Năm học 2026 - 2027)`;
+  $("deptTitle").innerHTML = `HOẠT ĐỘNG GIÁO DỤC ${subjectName().toUpperCase()} KHỐI LỚP ${grade}<br>(Năm học 2026 - 2027)`;
   const lessons = activeData().sgk || [];
-  $("deptDevices").querySelector("tbody").innerHTML = editableRows([
+  $("deptDevices").querySelector("tbody").innerHTML = editableRows(isLS() ? [
+    [1,"Hệ thống bản đồ, lược đồ lịch sử (thế giới, khu vực, Việt Nam)", "....", "Các bài cần xác định vị trí/diễn biến trên bản đồ", "Bổ sung theo điều kiện thực tế"],
+    [2,"Máy chiếu, máy tính, học liệu số, tư liệu/ảnh/video lịch sử", "....", "Các bài cần trực quan hóa hoặc khai thác học liệu số", ""],
+    [3,"Phiếu học tập, tư liệu/sử liệu sưu tầm", "....", "Hoạt động vận dụng và trải nghiệm, thực hành lịch sử", ""]
+  ] : [
     [1,"Bộ dụng cụ thí nghiệm và hóa chất theo danh mục nhà trường", "....", "Các bài có thí nghiệm/thực hành", "Bổ sung theo điều kiện thực tế"],
     [2,"Máy chiếu, máy tính, học liệu số, mô phỏng", "....", "Các bài cần trực quan hóa hoặc khai thác học liệu số", ""],
     [3,"Phiếu học tập, vật liệu STEM", "....", "Hoạt động vận dụng và trải nghiệm", ""]
   ]);
-  $("deptRooms").querySelector("tbody").innerHTML = editableRows([
+  $("deptRooms").querySelector("tbody").innerHTML = editableRows(isLS() ? [
+    [1,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác bản đồ số, tư liệu, học liệu số", ""],
+    [2,"Thư viện/phòng tư liệu", "....", "Khai thác sử liệu, tư liệu tham khảo", ""],
+    [3,"Không gian trải nghiệm/bảo tàng, di tích (nếu có)", "....", "Thực hành lịch sử, tham quan, câu lạc bộ", ""]
+  ] : [
     [1,"Phòng thực hành bộ môn Hóa học", "....", "Dạy các bài thực hành/thí nghiệm", ""],
     [2,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác học liệu số, mô phỏng, kiểm tra trực tuyến", ""],
     [3,"Sân trường/không gian trải nghiệm", "....", "Hoạt động STEM, trải nghiệm, câu lạc bộ", ""]
@@ -1393,6 +1719,12 @@ function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
 
 $("selSource").addEventListener("change", populateChuong);
 $("selGrade").addEventListener("change", () => { refreshGradeLabels(); populateChuong(); scheduleDraftSave(); });
+$("selMon").addEventListener("change", () => {
+  currentSubject = $("selMon").value;
+  refreshGradeLabels();
+  populateChuong();
+  scheduleDraftSave();
+});
 $("selChuong").addEventListener("change", populateBai);
 $("selBai").addEventListener("change", selectLesson);
 $("btnToggleInd").addEventListener("click", () => {
@@ -1417,7 +1749,7 @@ function buildPaperSkeleton(){
   $("paper").innerHTML = `
     <div class="paper-tools"><span class="chip">Có thể sửa trực tiếp từng phần</span><span class="chip">Tự lưu bản nháp</span></div>
     <h3 class="title">${planTitle}</h3>
-    <div class="school-line">${specialist ? `Chuyên đề học tập Hóa học ${activeGrade()}` : `Môn: Hóa học ${activeGrade()}`} &nbsp;·&nbsp; ${esc(l.bai)}</div>
+    <div class="school-line">${specialist ? `Chuyên đề học tập ${subjectName()} ${activeGrade()}` : `Môn: ${subjectName()} ${activeGrade()}`} &nbsp;·&nbsp; ${esc(l.bai)}</div>
     <div class="meta-grid">
       <div>Lớp dạy: ${esc(lop)}</div><div>Số tiết: ${esc(tiet)}</div>
       <div>Ngày soạn: ${esc(ngay)}</div><div>${esc(l.chuong)}</div>
@@ -1448,9 +1780,11 @@ function buildPaperSkeleton(){
    AI GENERATION
    ====================================================================== */
 const TABLE_OUTPUT_RULE = ` QUY ĐỊNH ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC): chỉ trả về DUY NHẤT mã HTML, bắt đầu ngay từ ký tự đầu tiên bằng <table class="khbd-table">, không thêm chữ giải thích, lời dẫn hay markdown nào trước hoặc sau bảng. Cấu trúc đúng như sau: <table class="khbd-table"><thead><tr><th>Hoạt động của GV và HS</th><th>Sản phẩm dự kiến</th><th>Năng lực số (NLS)</th></tr></thead><tbody><tr><td>...</td><td>...</td><td>...</td></tr></tbody></table>. BẮT BUỘC điền đầy đủ nội dung cho CẢ 3 CỘT của MỌI dòng — tuyệt đối không để cột Sản phẩm dự kiến hoặc Năng lực số (NLS) trống hoặc bỏ dở; viết ngắn gọn, súc tích để đảm bảo hoàn chỉnh hết bảng (kết thúc bằng đúng thẻ </table>) trong giới hạn độ dài cho phép. Trong nội dung mỗi <td>, nếu có nhiều dòng/bước thì nối các dòng bằng thẻ <br> (không dùng \\n, không dùng <li>/<ul>). Cột Năng lực số (NLS) ghi mỗi mã trong một thẻ <span class="nls-badge">mã</span>, nhiều mã nối nhau bằng <br>.`;
-const SECTIONS = [
+function getSections(){
+  const nangLucDacThu = isLS() ? "Năng lực lịch sử" : "Năng lực hoá học";
+  return [
   { key:"mucTieu", label:"Mục tiêu",
-    ask:`Soạn phần "I. MỤC TIÊU" của KHBD. Trình bày theo 4 mục: 1. Kiến thức; 2. Năng lực, gồm 2.1. Năng lực chung, 2.2. Năng lực hoá học, 2.3. Năng lực số; 3. Phẩm chất. Ở mục 2.3 phải nêu rõ mã chỉ báo NLS dạng x.y.NC1a/b và biểu hiện cụ thể gắn với bài học, không chỉ nêu tên miền. Dùng dấu "- " đầu dòng, không dùng markdown (không **, không #). CHỈ trả về văn bản thuần (không dùng thẻ HTML).` },
+    ask:`Soạn phần "I. MỤC TIÊU" của KHBD. Trình bày theo 4 mục: 1. Kiến thức; 2. Năng lực, gồm 2.1. Năng lực chung, 2.2. ${nangLucDacThu}, 2.3. Năng lực số; 3. Phẩm chất. Ở mục 2.3 phải nêu rõ mã chỉ báo NLS dạng x.y.NC1a/b và biểu hiện cụ thể gắn với bài học, không chỉ nêu tên miền. Dùng dấu "- " đầu dòng, không dùng markdown (không **, không #). CHỈ trả về văn bản thuần (không dùng thẻ HTML).` },
   { key:"thietBi", label:"Thiết bị dạy học và học liệu",
     ask:`Soạn phần "II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU". Liệt kê: a) Đối với giáo viên (thiết bị, học liệu, kể cả công cụ số nêu ở phần gợi ý NLS), b) Đối với học sinh. Dùng dấu "- " đầu dòng, không dùng markdown. CHỈ trả về văn bản thuần (không dùng thẻ HTML).` },
   { key:"hd1", label:"Hoạt động 1 (Khởi động)",
@@ -1461,10 +1795,14 @@ const SECTIONS = [
     ask:`Soạn "Hoạt động 3: Luyện tập" theo mẫu KHBD có tích hợp NLS. Trình bày thành bảng 3 cột: Hoạt động của GV và HS | Sản phẩm dự kiến | Năng lực số (NLS). Nội dung có 2-3 câu hỏi/bài tập phù hợp khối lớp đang chọn. Cột NLS ghi mã chỉ báo dạng x.y.NC1a/b nếu có dùng trò chơi, phiếu số, bảng tính, kiểm chứng kết quả hoặc chia sẻ sản phẩm. Không dùng markdown.${TABLE_OUTPUT_RULE}` },
   { key:"hd4", label:"Hoạt động 4 (Vận dụng, tích hợp NLS)",
     ask:`Soạn "Hoạt động 4: Vận dụng" theo mẫu KHBD có tích hợp NLS. Trình bày thành bảng 3 cột: Hoạt động của GV và HS | Sản phẩm dự kiến | Năng lực số (NLS). Đây là hoạt động chính để HS thực hiện nhiệm vụ số đã gợi ý; cột NLS phải ghi mã chỉ báo dạng x.y.NC1a/b và tiêu chí đánh giá sản phẩm số ngắn gọn. Không dùng markdown.${TABLE_OUTPUT_RULE}` },
-];
+  ];
+}
 
 function buildSystemPrompt(){
-  return `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Hoá học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ hoá học phổ thông. Không dùng markdown (không in đậm **, không tiêu đề #). Học sinh lớp ${activeGrade()} tương ứng mức "Nâng cao 1" trong Khung năng lực số (Thông tư 02/2025/TT-BGDĐT, cụ thể hoá tại Phụ lục kèm Công văn 3456/BGDĐT-GDPT): các em xử lý nhiệm vụ/vấn đề đa dạng, có thể tự chủ và hướng dẫn người khác. Khi tích hợp năng lực số, chỉ tích hợp tự nhiên, lồng ghép vào đúng "địa chỉ" của bài học (không thêm hoạt động lan man ngoài nội dung), và phải bám sát các yêu cầu cần đạt (chỉ báo) của từng năng lực thành phần được cung cấp trong ngữ cảnh — không chỉ nêu tên miền chung. Luôn tuân thủ ĐÚNG định dạng đầu ra được yêu cầu trong từng câu hỏi cụ thể (văn bản thuần hoặc mã HTML <table>) và luôn viết đầy đủ, hoàn chỉnh hết bảng/nội dung được yêu cầu — đây là yêu cầu kỹ thuật bắt buộc để hệ thống hiển thị đúng, không được thêm, bớt định dạng hoặc bỏ dở giữa bảng.`;
+  const subjectClause = isLS()
+    ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Lịch sử THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018 môn Lịch sử (Thông tư 32/2018, cập nhật theo Thông tư 17/2025/TT-BGDĐT). Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ lịch sử/sử học (sử liệu, niên đại, bối cảnh lịch sử, diễn biến, ý nghĩa lịch sử...), tôn trọng sự thật lịch sử, khách quan, không suy diễn chủ quan.`
+    : `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Hoá học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ hoá học phổ thông.`;
+  return `${subjectClause} Không dùng markdown (không in đậm **, không tiêu đề #). Học sinh lớp ${activeGrade()} tương ứng mức "Nâng cao 1" trong Khung năng lực số (Thông tư 02/2025/TT-BGDĐT, cụ thể hoá tại Phụ lục kèm Công văn 3456/BGDĐT-GDPT): các em xử lý nhiệm vụ/vấn đề đa dạng, có thể tự chủ và hướng dẫn người khác. Khi tích hợp năng lực số, chỉ tích hợp tự nhiên, lồng ghép vào đúng "địa chỉ" của bài học (không thêm hoạt động lan man ngoài nội dung), và phải bám sát các yêu cầu cần đạt (chỉ báo) của từng năng lực thành phần được cung cấp trong ngữ cảnh — không chỉ nêu tên miền chung. Luôn tuân thủ ĐÚNG định dạng đầu ra được yêu cầu trong từng câu hỏi cụ thể (văn bản thuần hoặc mã HTML <table>) và luôn viết đầy đủ, hoàn chỉnh hết bảng/nội dung được yêu cầu — đây là yêu cầu kỹ thuật bắt buộc để hệ thống hiển thị đúng, không được thêm, bớt định dạng hoặc bỏ dở giữa bảng.`;
 }
 
 function buildNlsIndicatorsText(){
@@ -1480,7 +1818,7 @@ function buildNlsIndicatorsText(){
   return lines.join("\n");
 }
 
-function sgvGuideForLesson(lesson=currentLesson){
+function sgvGuideForLesson_HOA(lesson=currentLesson){
   const text = `${lesson?.chuong || ""} ${lesson?.bai || ""} ${lesson?.demuc || ""}`.toLowerCase();
   const grade = activeGrade();
   const isReview = /ôn tập|luyện tập/.test(text);
@@ -1531,6 +1869,67 @@ function sgvGuideForLesson(lesson=currentLesson){
   return guide;
 }
 
+function sgvGuideForLesson_LS(lesson=currentLesson){
+  const text = `${lesson?.chuong || ""} ${lesson?.bai || ""} ${lesson?.demuc || ""}`.toLowerCase();
+  const grade = activeGrade();
+  const isReview = /ôn tập|luyện tập|thực hành lịch sử/.test(text);
+  const isVanMinh = /văn minh|văn hoá|di sản|thành tựu/.test(text);
+  const isKhoiNghiaChienTranh = /khởi nghĩa|kháng chiến|chiến tranh|cách mạng|chiến dịch/.test(text);
+  const isCaiCach = /cải cách/.test(text);
+  const isDoiNgoai = /đối ngoại|quan hệ quốc tế|liên hợp quốc|asean|hội nhập/.test(text);
+  const isNhanVat = /hồ chí minh|danh nhân|nhân vật/.test(text);
+  const isBienDong = /biển đông|hoàng sa|trường sa|chủ quyền/.test(text);
+  const guide = {
+    source: `SGV Lịch sử ${grade} (Kết nối tri thức) - dùng như định hướng thiết kế hoạt động, thiết bị và đánh giá.`,
+    focus: "Tổ chức hoạt động theo mạch: khởi động nêu vấn đề - khai thác sử liệu hình thành kiến thức - luyện tập củng cố - vận dụng liên hệ thực tiễn.",
+    devices: ["SGV/SGK Lịch sử " + grade, "phiếu học tập", "bảng tiêu chí đánh giá", "máy chiếu hoặc màn hình trình chiếu", "bản đồ/lược đồ lịch sử"],
+    methods: ["khai thác tư liệu, sử liệu", "hoạt động nhóm nhỏ", "báo cáo - thảo luận - chuẩn hoá kiến thức"],
+    assessment: ["quan sát quá trình học tập", "sản phẩm phiếu học tập", "câu trả lời/bài tập vận dụng"]
+  };
+  if(isVanMinh){
+    guide.devices.push("ảnh/tư liệu di sản số (bảo tàng số, Google Arts & Culture)", "đường thời gian số các thành tựu", "bản đồ phân bố di sản");
+    guide.methods.push("so sánh thành tựu giữa các nền văn minh", "khai thác hình ảnh/tư liệu trực quan", "thiết kế infographic giới thiệu thành tựu");
+    guide.assessment.push("infographic/đường thời gian về thành tựu văn minh", "phiếu so sánh các nền văn minh");
+  }
+  if(isKhoiNghiaChienTranh){
+    guide.focus = "Ưu tiên khai thác bản đồ/lược đồ diễn biến, xây dựng bảng tóm tắt (thời gian - đối tượng - trận đánh lớn - kết quả), lí giải nguyên nhân thắng lợi/thất bại và rút bài học lịch sử.";
+    guide.devices.push("bản đồ số diễn biến chiến dịch/khởi nghĩa", "video tư liệu lịch sử đã kiểm chứng nguồn", "bảng tóm tắt diễn biến");
+    guide.methods.push("trình bày diễn biến trên bản đồ", "lập bảng so sánh/tóm tắt", "thảo luận nguyên nhân thắng lợi - bài học lịch sử");
+    guide.assessment.push("bảng tóm tắt diễn biến trận đánh/khởi nghĩa", "bài viết ngắn nêu bài học lịch sử");
+  }
+  if(isCaiCach){
+    guide.devices.push("sơ đồ bối cảnh - nội dung - kết quả cải cách", "bảng so sánh các cuộc cải cách");
+    guide.methods.push("phân tích bối cảnh - nội dung - kết quả", "so sánh giữa các cuộc cải cách đã học");
+    guide.assessment.push("sơ đồ/bảng tóm tắt một cuộc cải cách", "nhận xét, bài học kinh nghiệm rút ra");
+  }
+  if(isDoiNgoai){
+    guide.devices.push("cổng thông tin chính thức của tổ chức quốc tế liên quan (UN, ASEAN)", "sơ đồ tổ chức/quan hệ đối ngoại số");
+    guide.methods.push("tra cứu nguồn chính thống", "tổng hợp bằng sơ đồ số", "liên hệ thời sự quốc tế");
+    guide.assessment.push("sơ đồ số tổng hợp thông tin đã tra cứu", "bài viết liên hệ thời sự");
+  }
+  if(isNhanVat){
+    guide.devices.push("tư liệu, ảnh số về nhân vật đã kiểm chứng nguồn", "đường thời gian số về cuộc đời, sự nghiệp");
+    guide.methods.push("dựng đường thời gian số", "khai thác tư liệu tiểu sử có trích dẫn nguồn", "thiết kế sản phẩm tuyên truyền/giới thiệu");
+    guide.assessment.push("đường thời gian/poster về nhân vật", "sản phẩm giới thiệu có trích dẫn nguồn rõ ràng");
+  }
+  if(isBienDong){
+    guide.devices.push("bản đồ số/GIS (Google Earth) xác định vị trí", "tư liệu pháp lí số (UNCLOS, Luật Biển Việt Nam)");
+    guide.methods.push("xác định vị trí trên bản đồ số", "khai thác văn bản pháp lí chính thống", "thảo luận trách nhiệm công dân");
+    guide.assessment.push("bản đồ số có chú giải", "bài viết/slide về chủ quyền biển đảo");
+  }
+  if(isReview){
+    guide.focus = "Hệ thống hoá kiến thức bằng sơ đồ/bảng tổng hợp, tổ chức trò chơi ôn tập, thực hành lịch sử gắn thực địa/bảo tàng khi có điều kiện.";
+    guide.devices.push("sơ đồ tư duy/bảng hệ thống hoá", "ngân hàng câu hỏi", "phiếu tự đánh giá");
+    guide.methods.push("trạm học tập", "trò chơi ôn tập lịch sử", "chữa lỗi điển hình");
+    guide.assessment.push("kết quả tự đánh giá", "bài luyện tập phân hoá");
+  }
+  return guide;
+}
+
+function sgvGuideForLesson(lesson=currentLesson){
+  return isLS() ? sgvGuideForLesson_LS(lesson) : sgvGuideForLesson_HOA(lesson);
+}
+
 function sgvGuideText(guide=sgvGuideForLesson()){
   return `- Nguồn định hướng: ${guide.source}
 - Trọng tâm tổ chức: ${guide.focus}
@@ -1569,7 +1968,7 @@ ${getPersonalizationBlock()}
 
 YÊU CẦU CHỐNG TRÙNG LẶP GIỮA CÁC GIÁO VIÊN
 - Không sao chép y nguyên một kế hoạch bài dạy mẫu.
-- Giữ nguyên yêu cầu cần đạt, chuẩn kiến thức Hóa học ${activeGrade()}, cấu trúc KHBD và mã NLS phù hợp.
+- Giữ nguyên yêu cầu cần đạt, chuẩn kiến thức ${subjectName()} ${activeGrade()}, cấu trúc KHBD và mã NLS phù hợp.
 - Tạo khác biệt ở tình huống khởi động, kĩ thuật tổ chức, câu hỏi luyện tập, nhiệm vụ vận dụng, công cụ số và sản phẩm học tập.
 ${note ? "\nGHI CHÚ CỦA GIÁO VIÊN: " + note : ""}`;
 }
@@ -1632,9 +2031,9 @@ Thực hiện nhiệm vụ: HS suy nghĩ cá nhân, trao đổi nhanh theo cặp
 Báo cáo, thảo luận: Đại diện HS nêu dự đoán, căn cứ và câu hỏi còn băn khoăn.
 Kết luận, nhận định: GV nhận xét, chốt vấn đề học tập và dẫn dắt vào bài.`;
   const hd2Gv = `Giao nhiệm vụ học tập: GV chia nhiệm vụ theo các đề mục SGK, sử dụng kĩ thuật ${variant.technique}, phát phiếu học tập và hướng dẫn nguồn học liệu/công cụ số phù hợp.
-Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, phân tích dữ liệu, quan sát thí nghiệm/mô phỏng hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
+Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, ${isLS() ? "khai thác tư liệu, sử liệu, bản đồ/lược đồ" : "phân tích dữ liệu, quan sát thí nghiệm/mô phỏng"} hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
 Báo cáo, thảo luận: Các nhóm trình bày kết quả; nhóm khác nhận xét, bổ sung, đặt câu hỏi và kiểm chứng thông tin.
-Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh thuật ngữ/công thức trọng tâm.
+Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh ${isLS() ? "sự kiện/niên đại/khái niệm" : "thuật ngữ/công thức"} trọng tâm.
 ${taskLines}`;
   const hd3Gv = `Giao nhiệm vụ học tập: GV giao câu hỏi/bài tập luyện tập theo cá nhân hoặc nhóm nhỏ.
 Thực hiện nhiệm vụ: HS hoàn thành bài tập, có thể dùng ${variant.digitalTool}, phiếu số hoặc công cụ kiểm tra kết quả theo hướng dẫn.
@@ -1643,10 +2042,15 @@ Kết luận, nhận định: GV chuẩn hóa đáp án, chỉ ra lỗi thườn
   const hd4Gv = `Giao nhiệm vụ học tập: GV giao nhiệm vụ vận dụng có tích hợp năng lực số: ${l.hoatdong}
 Thực hiện nhiệm vụ: HS thực hiện cá nhân/nhóm, thu thập và kiểm chứng thông tin, tạo ${variant.product} bằng công cụ phù hợp.
 Báo cáo, thảo luận: HS nộp/chia sẻ sản phẩm, trình bày nguồn tham khảo và cách kiểm chứng.
-Kết luận, nhận định: GV nhận xét theo tiêu chí: đúng kiến thức hoá học, nguồn đáng tin cậy, trình bày rõ, sử dụng công cụ số an toàn và có trách nhiệm.`;
+Kết luận, nhận định: GV nhận xét theo tiêu chí: đúng kiến thức ${isLS() ? "lịch sử" : "hoá học"}, nguồn đáng tin cậy, trình bày rõ, sử dụng công cụ số an toàn và có trách nhiệm.`;
+  const nangLucDacThuBlock = isLS()
+    ? `2.2. Năng lực lịch sử\n- Tìm hiểu lịch sử: Nhận diện, khai thác và sử dụng được tư liệu/sử liệu liên quan đến bài học.\n- Nhận thức và tư duy lịch sử: Trình bày, giải thích diễn biến, nguyên nhân - kết quả, ý nghĩa của sự kiện/quá trình lịch sử trong bài.\n- Vận dụng kiến thức, kĩ năng đã học: Rút ra bài học lịch sử, liên hệ vận dụng vào vấn đề thực tiễn.`
+    : `2.2. Năng lực hoá học\n- Nhận thức hoá học: Mô tả, giải thích và sử dụng đúng khái niệm, quy luật, công thức trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ hoá học: Quan sát, phân tích dữ liệu, thí nghiệm hoặc mô phỏng để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống gắn với nội dung bài học.`;
   const map = {
-    mucTieu: `1. Kiến thức\n- Trình bày và vận dụng được các nội dung trọng tâm của bài: ${ycc}\n- Liên hệ được kiến thức với hiện tượng, bài tập hoặc tình huống thực tiễn phù hợp với chủ đề "${l.bai}".\n- Bám định hướng SGV: ${sgv.focus}\n\n2. Năng lực\n2.1. Năng lực chung\n- Tự chủ và tự học: Chủ động chuẩn bị bài, khai thác học liệu và hoàn thành nhiệm vụ được giao.\n- Giao tiếp và hợp tác: Thảo luận, trình bày, phản biện kết quả học tập trong nhóm/lớp.\n- Giải quyết vấn đề và sáng tạo: Lựa chọn cách tiếp cận phù hợp để giải quyết nhiệm vụ học tập và tình huống thực tiễn.\n\n2.2. Năng lực hoá học\n- Nhận thức hoá học: Mô tả, giải thích và sử dụng đúng khái niệm, quy luật, công thức trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ hoá học: Quan sát, phân tích dữ liệu, thí nghiệm hoặc mô phỏng để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống gắn với nội dung bài học.\n\n2.3. Năng lực số tích hợp\n${nlsGoalText()}\n\n3. Phẩm chất\n- Phù hợp với ${classProfile}; điều kiện tổ chức: ${facilities}.\n- Chăm chỉ trong chuẩn bị bài, ghi chép và hoàn thành nhiệm vụ học tập.\n- Trung thực khi xử lí dữ liệu, trích dẫn nguồn và báo cáo kết quả.\n- Trách nhiệm khi hợp tác nhóm, sử dụng thiết bị và công cụ số an toàn.${commonTail}`,
-    thietBi: `a) Đối với giáo viên\n- SGV và SGK Hóa học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video/thí nghiệm/mô phỏng phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn khi sử dụng hóa chất, dụng cụ và thiết bị số.\n\nb) Đối với học sinh\n- SGK Hóa học ${activeGrade()}, vở ghi, máy tính cầm tay nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`,
+    mucTieu: `1. Kiến thức\n- Trình bày và vận dụng được các nội dung trọng tâm của bài: ${ycc}\n- Liên hệ được kiến thức với hiện tượng, bài tập hoặc tình huống thực tiễn phù hợp với chủ đề "${l.bai}".\n- Bám định hướng SGV: ${sgv.focus}\n\n2. Năng lực\n2.1. Năng lực chung\n- Tự chủ và tự học: Chủ động chuẩn bị bài, khai thác học liệu và hoàn thành nhiệm vụ được giao.\n- Giao tiếp và hợp tác: Thảo luận, trình bày, phản biện kết quả học tập trong nhóm/lớp.\n- Giải quyết vấn đề và sáng tạo: Lựa chọn cách tiếp cận phù hợp để giải quyết nhiệm vụ học tập và tình huống thực tiễn.\n\n${nangLucDacThuBlock}\n\n2.3. Năng lực số tích hợp\n${nlsGoalText()}\n\n3. Phẩm chất\n- Phù hợp với ${classProfile}; điều kiện tổ chức: ${facilities}.\n- Chăm chỉ trong chuẩn bị bài, ghi chép và hoàn thành nhiệm vụ học tập.\n- Trung thực khi xử lí dữ liệu, trích dẫn nguồn và báo cáo kết quả.\n- Trách nhiệm khi hợp tác nhóm, sử dụng thiết bị và công cụ số an toàn.${commonTail}`,
+    thietBi: isLS()
+      ? `a) Đối với giáo viên\n- SGV và SGK Lịch sử ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; bản đồ/lược đồ, tư liệu, hình ảnh/video lịch sử đã kiểm chứng nguồn phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/tư liệu số khi không đủ điều kiện tham quan thực địa/bảo tàng; bảo đảm trích dẫn nguồn rõ ràng, đáng tin cậy.\n\nb) Đối với học sinh\n- SGK Lịch sử ${activeGrade()}, vở ghi, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin, sử liệu.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
+      : `a) Đối với giáo viên\n- SGV và SGK Hóa học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video/thí nghiệm/mô phỏng phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn khi sử dụng hóa chất, dụng cụ và thiết bị số.\n\nb) Đối với học sinh\n- SGK Hóa học ${activeGrade()}, vở ghi, máy tính cầm tay nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`,
     hd1: activityTableHtml(hd1Gv, `- Câu trả lời/dự đoán ban đầu của HS.\n- Vấn đề học tập cần giải quyết trong bài "${l.bai}".`, nlsCodes(0, 2)),
     hd2: activityTableHtml(hd2Gv, `- Phiếu học tập hoặc vở ghi hoàn thiện theo từng đề mục.\n- Kết luận kiến thức chính bám sát yêu cầu cần đạt: ${ycc}\n- Minh chứng khai thác/kiểm chứng học liệu số nếu có.`, nlsCodes(1, 3)),
     hd3: activityTableHtml(hd3Gv, `- Bài làm/câu trả lời của HS.\n- 2-3 câu hỏi/bài tập mẫu đã được chữa và tự đánh giá.\n- Kết quả đối chiếu, sửa lỗi sau nhận xét của GV.`, nlsCodes(2, 2)),
@@ -1683,6 +2087,11 @@ async function callClaude(sectionAsk){
   if(AI_PROXY_URL){
     url = AI_PROXY_URL;
     if(APP_SHARED_SECRET) headers["X-App-Secret"] = APP_SHARED_SECRET;
+    try{
+      const session = JSON.parse(localStorage.getItem("khbd-access-session-v2") || "null");
+      if(session?.code) headers["X-Access-Code"] = session.code;
+      headers["X-Device-Id"] = getDeviceId();
+    }catch(e){}
   } else if(apiKey){
     headers["x-api-key"] = apiKey;
     headers["anthropic-version"] = "2023-06-01";
@@ -1732,6 +2141,7 @@ async function fillSections({ offline=false, variant=false } = {}){
   $("progressWrap").style.display = "block";
   buildPaperSkeleton();
 
+  const SECTIONS = getSections();
   for(let i=0;i<SECTIONS.length;i++){
     const sec = SECTIONS[i];
     const el = document.getElementById("sec-" + sec.key);
@@ -1799,7 +2209,7 @@ function setWorkspace(deptMode){
   ["btnCopy","btnDownload","btnDownloadPdf"].forEach(id => { $(id).style.display = deptMode ? "none" : "flex"; });
   if(deptMode){
     $("topTitle").textContent = "Kế hoạch dạy học của Tổ chuyên môn";
-    $("topSub").textContent = `Hồ sơ riêng cho toàn bộ chương trình Hóa học ${activeGrade()}`;
+    $("topSub").textContent = `Hồ sơ riêng cho toàn bộ chương trình ${subjectName()} ${activeGrade()}`;
     if(!$("deptDistribution").querySelector("tbody").children.length && !loadDeptPlan(false)) createDeptPlan();
   }else if(currentLesson){
     $("topTitle").textContent = currentLesson.bai.replace(/^Bài \d+\.\s*/,"");
@@ -1876,7 +2286,7 @@ function loadDraft(){
     if($("selFacilities")) $("selFacilities").value = d.facilities || "standard";
     if($("selVariation")) $("selVariation").value = d.variation || "medium";
     if($("txtDeptPlan")) $("txtDeptPlan").value = d.deptPlan || localStorage.getItem(DEPT_STORAGE_KEY) || "";
-    if($("inpDeptName")) $("inpDeptName").value = d.deptName || "Tổ Hóa học";
+    if($("inpDeptName")) $("inpDeptName").value = d.deptName || `Tổ ${subjectName()}`;
     if($("inpSchoolYear")) $("inpSchoolYear").value = d.schoolYear || "";
     if(d.paperHtml) $("paper").innerHTML = d.paperHtml;
     $("draftStatus").textContent = d.savedAt ? "Đã khôi phục bản nháp đã lưu." : "Đã khôi phục bản nháp.";
@@ -1938,7 +2348,7 @@ function assembleDocument(){
   const ngay = $("inpNgay").value || "……/……/………";
   return {
     title: $("selSource").value === "cd" ? "KẾ HOẠCH BÀI DẠY CHUYÊN ĐỀ" : "KẾ HOẠCH BÀI DẠY",
-    grade: activeGrade(), specialist: $("selSource").value === "cd",
+    grade: activeGrade(), specialist: $("selSource").value === "cd", subjectLabel: subjectName(),
     bai: l.bai, chuong: l.chuong, lop, tiet, ngay,
     mucTieu: getSectionText("sec-mucTieu"),
     thietBi: getSectionText("sec-thietBi"),
@@ -2054,7 +2464,7 @@ function wrapExportHtml(title, body, landscape=false){
 function teacherExportHtml(d, signed=false){
   const body = `${fixedSchoolHeaderHtml()}
   <h2>${esc(d.title)}</h2>
-  <p class="meta-line">${d.specialist ? "Chuyên đề học tập Hóa học" : "Môn: Hóa học"} ${esc(d.grade)} - ${esc(d.bai)}<br>${esc(d.chuong)}</p>
+  <p class="meta-line">${d.specialist ? `Chuyên đề học tập ${d.subjectLabel || "Hóa học"}` : `Môn: ${d.subjectLabel || "Hóa học"}`} ${esc(d.grade)} - ${esc(d.bai)}<br>${esc(d.chuong)}</p>
   <p class="lesson-info">Lớp dạy: ${esc(d.lop)} &nbsp;&nbsp; Số tiết: ${esc(d.tiet)} &nbsp;&nbsp; Ngày soạn: ${esc(d.ngay)}</p>
   <h3>I. MỤC TIÊU</h3><div>${cleanExportHtml(d.mucTieuHtml)}</div>
   <h3>II. THIẾT BỊ DẠY HỌC VÀ HỌC LIỆU</h3><div>${cleanExportHtml(d.thietBiHtml)}</div>
@@ -2200,7 +2610,7 @@ function deptExportHtml(signed=false){
     .replace(/contenteditable="true"/g, "")
     .replace(/data-placeholder="[^"]*"/g, "")
     .replace(/<div class="dept-tools">[\s\S]*?<\/div>/, ""));
-  return wrapExportHtml(`Kế hoạch Tổ Hóa học ${activeGrade()}`, `${content}${signed ? signatureHtml("TỔ TRƯỞNG CHUYÊN MÔN", "BAN GIÁM HIỆU") : ""}`, true);
+  return wrapExportHtml(`Kế hoạch Tổ ${subjectName()} ${activeGrade()}`, `${content}${signed ? signatureHtml("TỔ TRƯỞNG CHUYÊN MÔN", "BAN GIÁM HIỆU") : ""}`, true);
 }
 function flashTop(msg){
   const sub = $("topSub"); const old = sub.textContent;
