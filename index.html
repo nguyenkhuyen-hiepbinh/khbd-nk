@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -329,17 +329,23 @@
 
   .main{ background:#E7EEEA; }
   .topbar{
-    background:#FFFFFF; border-bottom:1px solid #D7E1DB; padding:16px 30px;
+    background:#FFFFFF; border-bottom:1px solid #D7E1DB; padding:15px 28px;
     box-shadow:0 1px 0 rgba(27,62,49,.03);
+    gap:18px;
   }
   .topbar h2{ color:#173C32; font-family:'Inter',sans-serif; font-size:18px; font-weight:700; }
   .topbar .sub{ color:#6C7C73; font-size:12px; }
-  .top-actions{ gap:7px; }
-  .top-actions .btn{ color:#315247; background:#F6F9F7; border:1px solid #D9E4DD; min-height:36px; }
+  .top-actions{ gap:7px; flex-wrap:wrap; justify-content:flex-end; max-width:680px; }
+  .top-actions .btn{ color:#315247; background:#F6F9F7; border:1px solid #D9E4DD; min-height:36px; white-space:nowrap; }
   .top-actions .btn:hover{ background:#ECF3EE; border-color:#B7CEBF; }
-  .canvas-wrap{ padding:30px 28px 58px; }
+  #btnDownload,#btnDownloadDept{ background:#FFF7E8; border-color:#E9C982; color:#6F4A13; }
+  #btnDownload:hover,#btnDownloadDept:hover{ background:#FFEFCF; border-color:#D9B25E; }
+  #btnDownloadPdf,#btnDownloadDeptPdf{ background:#FDF4F2; border-color:#E3B5AC; color:#813F34; }
+  #btnDownloadPdf:hover,#btnDownloadDeptPdf:hover{ background:#FBE8E4; border-color:#CF8F82; }
+  #btnBackLesson{ background:#EEF6F2; border-color:#BFD8C9; color:#245644; }
+  .canvas-wrap{ padding:28px 28px 58px; }
   .paper{
-    width:min(880px,100%); border:1px solid #DCE6DF; border-radius:8px; box-shadow:0 18px 46px rgba(31,65,51,.12);
+    width:min(940px,100%); border:1px solid #DCE6DF; border-radius:8px; box-shadow:0 18px 46px rgba(31,65,51,.12);
     padding:52px 60px 70px;
   }
   .paper h3.title{ color:#173C32; font-size:20px; }
@@ -356,7 +362,7 @@
   .nls-badge{ border-color:#BFD5C5; background:#F2F8F3; color:#326147; }
   .placeholder-state{ color:#708278; }
   .placeholder-state .big{ color:#234D3E; font-size:22px; }
-  .dept-paper{ width:min(1160px,100%); }
+  .dept-paper{ width:min(1180px,100%); }
   .dept-table th{ background:#EAF3EC; border-color:#BFCFC4; color:#244C3D; }
   .dept-table td{ border-color:#CFDDD3; }
   @media (max-width: 720px){
@@ -385,6 +391,7 @@
   }
 
   @media print{
+    @page{ size:A4 landscape; margin:1.1cm 1.5cm 1.1cm 2.5cm; }
     body{ background:#fff; height:auto; overflow:visible; }
     .app{ display:block; height:auto; }
     .sidebar,.topbar,.paper-tools,.toast{ display:none !important; }
@@ -438,6 +445,7 @@
         <option value="hoa">Hóa học</option>
         <option value="vl">Vật lí</option>
         <option value="bio">Sinh học</option>
+        <option value="van">Ngữ văn</option>
         <option value="ls">Lịch sử</option>
       </select>
     </div>
@@ -704,7 +712,7 @@ async function initAccessGate(){
   const tryUnlock = async () => {
     const code = normalizeAccessCode(input.value);
     if(!code){ error.textContent = "Vui lòng nhập mã truy cập."; return; }
-    button.disabled = true; error.textContent = "Đang kiểm tra…";
+    button.disabled = true; error.textContent = "Đang kiểm tra...";
     const check = await serverValidateCode(code);
     button.disabled = false;
     if(check.valid){
@@ -843,13 +851,14 @@ const NLS_DESCRIPTORS = {
   ]},
 };
 
-let currentSubject = "hoa"; // "hoa" | "vl" | "bio" | "ls"
+let currentSubject = "hoa"; // "hoa" | "vl" | "bio" | "van" | "ls"
 function isLS(){ return currentSubject === "ls"; }
 function isVL(){ return currentSubject === "vl"; }
 function isBIO(){ return currentSubject === "bio"; }
-function subjectName(){ return isLS() ? "Lịch sử" : (isVL() ? "Vật lí" : (isBIO() ? "Sinh học" : "Hóa học")); }
-function subjectShort(){ return isLS() ? "lịch sử" : (isVL() ? "vật lí" : (isBIO() ? "sinh học" : "hoá học")); }
-function subjectSlug(){ return isLS() ? "Lich-su" : (isVL() ? "Vat-li" : (isBIO() ? "Sinh-hoc" : "Hoa-hoc")); }
+function isVAN(){ return currentSubject === "van"; }
+function subjectName(){ return isLS() ? "Lịch sử" : (isVL() ? "Vật lí" : (isBIO() ? "Sinh học" : (isVAN() ? "Ngữ văn" : "Hóa học"))); }
+function subjectShort(){ return isLS() ? "lịch sử" : (isVL() ? "vật lí" : (isBIO() ? "sinh học" : (isVAN() ? "ngữ văn" : "hoá học"))); }
+function subjectSlug(){ return isLS() ? "Lich-su" : (isVL() ? "Vat-li" : (isBIO() ? "Sinh-hoc" : (isVAN() ? "Ngu-van" : "Hoa-hoc"))); }
 
 const DATA = {
   sgk: [
@@ -1756,7 +1765,132 @@ const BIO_DATA = {
     bioLesson("Chuyên đề 12.3. Sinh thái nhân văn", "Bài 7. Dự án tìm hiểu vấn đề sinh thái nhân văn ở địa phương", ["I","V"], {congcu:"Bản đồ số, bảng khảo sát, ảnh thực địa và công cụ trình bày báo cáo dự án."})
   ]}
 };
+function vanDemuc(readings, practice, writing, speaking){
+  return `Tìm hiểu tri thức ngữ văn | Đọc | ${readings.join(" | ")} | Thực hành tiếng Việt | ${practice} | Viết | ${writing} | Nói và nghe | ${speaking} | Củng cố, mở rộng`;
+}
+function vanLesson(chuong, bai, readings, practice, writing, speaking, mien=["I","III"], extra={}){
+  const title = bai.replace(/^Bài\s+\d+\.\s*/i, "");
+  return {
+    chuong,
+    bai,
+    ycc: `Đọc hiểu và phân tích được các văn bản thuộc chủ đề "${title}"; vận dụng được kiến thức tiếng Việt phù hợp; thực hiện được yêu cầu viết "${writing.toLowerCase()}"; trình bày, trao đổi được nhiệm vụ "${speaking.toLowerCase()}".`,
+    demuc: vanDemuc(readings, practice, writing, speaking),
+    mien,
+    congcu: extra.congcu || "Padlet/Google Docs/Canva, thư viện số, học liệu nghe nhìn, công cụ trình chiếu hoặc bảng cộng tác trực tuyến.",
+    hoatdong: extra.hoatdong || `HS đọc, ghi chú, trao đổi nhóm về ${title.toLowerCase()}, đối chiếu nguồn học liệu số, tạo sản phẩm đọc - viết - nói nghe phù hợp và tự đánh giá theo tiêu chí.`,
+    sanpham: extra.sanpham || `Phiếu đọc hiểu, đoạn viết hoặc slide/poster số về chủ đề "${title}".`,
+    ...extra
+  };
+}
+function vanTopic(chuong, bai, mien=["I","III"], extra={}){
+  return {
+    chuong,
+    bai,
+    ycc: extra.ycc || `Thực hiện được các yêu cầu cốt lõi của chuyên đề "${bai}"; biết đọc, viết, trình bày và vận dụng kiến thức ngữ văn vào một nhiệm vụ học tập có sản phẩm.`,
+    demuc: extra.demuc || "I. Yêu cầu cần đạt | II. Chuẩn bị | III. Tổ chức hoạt động dạy học",
+    mien,
+    congcu: extra.congcu || "Google Docs/Slides, Padlet, Canva, biểu mẫu khảo sát, thư viện số và công cụ thuyết trình trực tuyến.",
+    hoatdong: extra.hoatdong || `HS triển khai nhiệm vụ của chuyên đề "${bai}", thu thập và xử lí tư liệu, viết/chỉnh sửa sản phẩm, trình bày kết quả và phản hồi chéo.`,
+    sanpham: extra.sanpham || `Sản phẩm học tập số hoặc hồ sơ dự án của chuyên đề "${bai}".`,
+    ...extra
+  };
+}
+const VAN_CURRICULUM = {
+  10: {
+    overview: "Lớp 10 phát triển nền tảng đọc hiểu theo thể loại, viết nghị luận và thuyết minh, nói nghe trong giao tiếp học đường, đồng thời hình thành năng lực kết nối văn học với đời sống.",
+    strands: [
+      "Đọc hiểu văn bản văn học, nghị luận, thông tin theo đặc trưng thể loại.",
+      "Viết văn bản nghị luận, thuyết minh, báo cáo nghiên cứu và bài luận về bản thân.",
+      "Nói và nghe qua giới thiệu, thảo luận, thuyết trình, phản hồi trong học tập."
+    ],
+    topics: [
+      "Chuyên đề 10.1: Tập nghiên cứu và viết báo cáo về một vấn đề văn học dân gian.",
+      "Chuyên đề 10.2: Sân khấu hoá tác phẩm văn học.",
+      "Chuyên đề 10.3: Đọc, viết, giới thiệu một tập thơ, một tập truyện ngắn hoặc một tiểu thuyết."
+    ]
+  },
+  11: {
+    overview: "Lớp 11 tăng cường chiều sâu phân tích truyện, thơ, kí, nghị luận và văn bản thông tin; chú trọng thảo luận, tranh biện, nghiên cứu tác giả và các vấn đề ngôn ngữ trong đời sống hiện đại.",
+    strands: [
+      "Đọc hiểu văn bản truyện, thơ, kí, nghị luận và thông tin ở mức độ phân tích sâu hơn.",
+      "Viết nghị luận văn học, nghị luận xã hội, thuyết minh và báo cáo nghiên cứu.",
+      "Nói và nghe qua thuyết trình, giới thiệu tác phẩm, tranh luận và phản hồi học thuật."
+    ],
+    topics: [
+      "Chuyên đề 11.1: Tập nghiên cứu và viết báo cáo về một vấn đề văn học trung đại Việt Nam.",
+      "Chuyên đề 11.2: Tìm hiểu ngôn ngữ trong đời sống xã hội hiện đại.",
+      "Chuyên đề 11.3: Đọc, viết và giới thiệu về một tác giả văn học."
+    ]
+  },
+  12: {
+    overview: "Lớp 12 hướng tới đọc hiểu và đánh giá các hiện tượng văn học ở độ sâu cao hơn, tăng cường viết nghị luận so sánh, báo cáo dự án và thuyết trình học thuật gắn với định hướng nghề nghiệp.",
+    strands: [
+      "Đọc hiểu tiểu thuyết, thơ, kịch, kí, nghị luận và văn bản thông tin với yêu cầu đánh giá, so sánh, phản biện.",
+      "Viết bài văn nghị luận so sánh, đánh giá, thuyết minh, thư trao đổi và báo cáo kết quả dự án.",
+      "Nói và nghe qua trình bày, tranh biện, báo cáo nghiên cứu và thuyết trình về vấn đề xã hội, văn học."
+    ],
+    topics: [
+      "Chuyên đề 12.1: Tập nghiên cứu và viết báo cáo về một vấn đề văn học hiện đại.",
+      "Chuyên đề 12.2: Tìm hiểu về một tác phẩm nghệ thuật chuyển thể từ văn học.",
+      "Chuyên đề 12.3: Tìm hiểu phong cách sáng tác của một trường phái văn học: cổ điển, hiện thực hoặc lãng mạn."
+    ]
+  }
+};
+function vanCurriculumText(grade=activeGrade()){
+  const c = VAN_CURRICULUM[grade] || VAN_CURRICULUM[10];
+  return `- Định hướng lớp ${grade}: ${c.overview}
+- Mạch nội dung cốt lõi: ${c.strands.join(" | ")}
+- Chuyên đề học tập: ${c.topics.join(" | ")}`;
+}
+const VAN_DATA = {
+  10: { sgk: [
+    vanLesson("Truyện kể", "Bài 1. Sức hấp dẫn của truyện kể", ["Truyện về các vị thần sáng tạo thế giới", "Tản Viên từ Phán sự lục", "Chữ người tử tù"], "Sử dụng từ Hán Việt", "Viết văn bản nghị luận phân tích, đánh giá một tác phẩm truyện", "Giới thiệu, đánh giá về nội dung và nghệ thuật của một tác phẩm truyện", ["I","III"]),
+    vanLesson("Thơ ca", "Bài 2. Vẻ đẹp của thơ ca", ["Chùm thơ hai-cu Nhật Bản", "Thu hứng", "Mùa xuân chín", "Bản hoà âm ngôn từ trong Tiếng thu"], "Lỗi dùng từ, lỗi về trật tự từ và cách sửa", "Viết văn bản nghị luận phân tích, đánh giá một tác phẩm thơ", "Giới thiệu, đánh giá về nội dung và nghệ thuật của một tác phẩm thơ", ["I","III"]),
+    vanLesson("Văn bản nghị luận", "Bài 3. Nghệ thuật thuyết phục trong văn nghị luận", ["Hiền tài là nguyên khí của quốc gia", "Yêu và đồng cảm", "Chữ bầu lên nhà thơ"], "Lỗi về mạch lạc và liên kết trong đoạn văn, văn bản", "Viết bài luận thuyết phục người khác từ bỏ một thói quen hay một quan niệm", "Thảo luận về một vấn đề xã hội có ý kiến khác nhau", ["I","III"]),
+    vanLesson("Sử thi", "Bài 4. Sức sống của sử thi", ["Héc-to từ biệt Ăng-đrô-mác", "Đăm Săn đi bắt Nữ Thần Mặt Trời"], "Sử dụng trích dẫn, cước chú và cách đánh dấu phần bị tỉnh lược trong văn bản", "Viết báo cáo nghiên cứu về một vấn đề", "Trình bày báo cáo kết quả nghiên cứu về một vấn đề", ["I","V"]),
+    vanLesson("Sân khấu dân gian", "Bài 5. Tích trò sân khấu dân gian", ["Xúy Vân giả dại", "Huyện đường", "Múa rối nước - hiện đại soi bóng tiền nhân"], "Kết hợp phương tiện ngôn ngữ và phi ngôn ngữ khi trình bày", "Viết báo cáo nghiên cứu về một vấn đề văn hoá truyền thống Việt Nam", "Lắng nghe và phản hồi về một bài thuyết trình kết quả nghiên cứu", ["I","V"]),
+    vanLesson("Văn học trung đại", "Bài 6. Nguyễn Trãi - “Dành còn để trợ dân này”", ["Tác gia Nguyễn Trãi", "Bình Ngô đại cáo", "Bảo kính cảnh giới", "Dục Thuý sơn"], "Sử dụng từ Hán Việt (tiếp theo)", "Viết văn bản nghị luận về một vấn đề xã hội", "Thảo luận về một vấn đề xã hội có ý kiến khác nhau", ["I","III"]),
+    vanLesson("Truyện hiện đại", "Bài 7. Quyền năng của người kể chuyện", ["Người cầm quyền khôi phục uy quyền", "Dưới bóng hoàng lan", "Một chuyện đùa nho nhỏ"], "Biện pháp chêm xen, biện pháp liệt kê", "Viết bài văn nghị luận phân tích, đánh giá một tác phẩm văn học", "Thảo luận về một vấn đề văn học có ý kiến khác nhau", ["I","III"]),
+    vanLesson("Văn bản thông tin", "Bài 8. Thế giới đa dạng của thông tin", ["Sự sống và cái chết", "Nghệ thuật truyền thống của người Việt", "Phục hồi tầng ozone: Thành công hiếm hoi của nỗ lực toàn cầu"], "Sử dụng phương tiện phi ngôn ngữ", "Viết một văn bản nội quy hoặc văn bản hướng dẫn nơi công cộng", "Thảo luận về văn bản nội quy hoặc văn bản hướng dẫn nơi công cộng", ["I","VI"]),
+    vanLesson("Đời sống và hướng nghiệp", "Bài 9. Hành trang cuộc sống", ["Về chính chúng ta", "Con đường không chọn", "Một đời như kẻ tìm đường"], "Sử dụng phương tiện phi ngôn ngữ (tiếp theo)", "Viết bài luận về bản thân", "Thuyết trình về một vấn đề xã hội có sử dụng kết hợp phương tiện ngôn ngữ và phương tiện phi ngôn ngữ", ["III","V"])
+  ], cd: [
+    vanTopic("Chuyên đề 10.1", "Tập nghiên cứu và viết báo cáo về một vấn đề văn học dân gian", ["I","V"], {ycc:"Biết lựa chọn đề tài, thu thập - xử lí tư liệu, viết báo cáo nghiên cứu và thuyết trình kết quả về một vấn đề văn học dân gian.", sanpham:"Đề cương nghiên cứu, báo cáo và bài thuyết trình về văn học dân gian."}),
+    vanTopic("Chuyên đề 10.2", "Sân khấu hoá tác phẩm văn học", ["I","V"], {ycc:"Biết đọc kịch bản, phân vai, tổ chức hoạt động sân khấu hoá và đánh giá sản phẩm chuyển thể một tác phẩm văn học.", sanpham:"Kịch bản sân khấu hoá, video hoặc buổi trình diễn ngắn."}),
+    vanTopic("Chuyên đề 10.3", "Đọc, viết, giới thiệu một tập thơ, một tập truyện ngắn hoặc một tiểu thuyết", ["I","III"], {ycc:"Biết lựa chọn tác phẩm theo sở thích, đọc có định hướng, viết bài giới thiệu và trình bày cảm nhận về một tập thơ, tập truyện ngắn hoặc tiểu thuyết.", sanpham:"Hồ sơ đọc, bài giới thiệu và slide/video giới thiệu tác phẩm."})
+  ]},
+  11: { sgk: [
+    vanLesson("Truyện kể", "Bài 1. Câu chuyện và điểm nhìn trong truyện kể", ["Vợ nhặt", "Chí Phèo"], "Đặc điểm cơ bản của ngôn ngữ nói và ngôn ngữ viết", "Viết văn bản nghị luận về một tác phẩm truyện", "Thuyết trình về nghệ thuật kể chuyện trong một tác phẩm truyện", ["I","III"]),
+    vanLesson("Thơ trữ tình", "Bài 2. Cấu tứ và hình ảnh trong thơ trữ tình", ["Nhớ đồng", "Tràng giang", "Con đường mùa đông"], "Một số hiện tượng phá vỡ những quy tắc ngôn ngữ thông thường", "Viết văn bản nghị luận về một tác phẩm thơ", "Giới thiệu về một tác phẩm nghệ thuật", ["I","III"]),
+    vanLesson("Văn bản nghị luận", "Bài 3. Cấu trúc của văn bản nghị luận", ["Câu hòi hiến", "Tôi có một ước mơ", "Một thời đại trong thi ca"], "Đặc điểm cơ bản của ngôn ngữ nói và ngôn ngữ viết (tiếp theo)", "Viết bài văn nghị luận về một vấn đề xã hội", "Trình bày ý kiến đánh giá, bình luận về một vấn đề xã hội", ["III","IV"]),
+    vanLesson("Truyện kì ảo", "Bài 4. Yếu tố kì ảo trong truyện kể", ["Hai đứa trẻ linh từ - Đền thiêng của bé", "Muối của rừng"], "Nghệ thuật sử dụng điển cố trong tác phẩm văn học", "Viết bài văn nghị luận về việc vay mượn - cải biến - sáng tạo trong một tác phẩm văn học", "Trình bày về việc vay mượn - cải biến - sáng tạo trong một tác phẩm văn học", ["I","III"]),
+    vanLesson("Hài kịch", "Bài 5. Tiếng cười của hài kịch", ["Nhân vật quan trọng", "Giấu của"], "Ngôn ngữ trào phúng, mỉa mai trong văn bản", "Viết báo cáo nghiên cứu về một vấn đề tự nhiên, xã hội", "Trình bày báo cáo kết quả nghiên cứu về một vấn đề tự nhiên hoặc xã hội", ["I","V"]),
+    vanLesson("Văn học về Nguyễn Du", "Bài 6. Nguyễn Du - “Những điều trông thấy mà đau đớn lòng”", ["Tác gia Nguyễn Du", "Trao duyên", "Độc Tiểu Thanh kí"], "Biện pháp tu từ lặp cấu trúc, biện pháp tu từ đối", "Viết văn bản thuyết minh về một tác phẩm văn học", "Giới thiệu về một tác phẩm văn học", ["I","III"]),
+    vanLesson("Kí", "Bài 7. Ghi chép và tưởng tượng trong kí", ["Ai đã đặt tên cho dòng sông?", "Và tôi vẫn muốn mẹ...", "Cà Mau quê xứ"], "Một số hiện tượng phá vỡ những quy tắc ngôn ngữ thông thường (tiếp theo)", "Viết văn bản thuyết minh về một sự vật, hiện tượng trong đời sống xã hội", "Thảo luận, tranh luận về một vấn đề trong đời sống", ["I","III"]),
+    vanLesson("Văn bản thông tin", "Bài 8. Cấu trúc của văn bản thông tin", ["Nữ phóng viên đầu tiên", "Trí thông minh nhân tạo", "Pa-ra-lim-pích: Một lịch sử chữa lành những vết thương"], "Sử dụng phương tiện phi ngôn ngữ", "Viết văn bản thuyết minh về một sự vật, hiện tượng trong tự nhiên", "Tranh biện về một vấn đề trong đời sống", ["I","VI"]),
+    vanLesson("Văn học và đời sống", "Bài 9. Lựa chọn và hành động", ["Bài ca ngất ngưởng", "Văn tế nghĩa sĩ Cần Giuộc", "Cộng đồng và cá thể"], "Cách giải thích nghĩa của từ", "Viết văn bản nghị luận về một tác phẩm nghệ thuật", "Giới thiệu về một tác phẩm nghệ thuật", ["III","V"])
+  ], cd: [
+    vanTopic("Chuyên đề 11.1", "Tập nghiên cứu và viết báo cáo về một vấn đề văn học trung đại Việt Nam", ["I","V"], {ycc:"Biết xác định vấn đề, phương pháp nghiên cứu, thu thập tư liệu và viết báo cáo về một vấn đề văn học trung đại Việt Nam.", sanpham:"Báo cáo nghiên cứu và bài thuyết trình về văn học trung đại Việt Nam."}),
+    vanTopic("Chuyên đề 11.2", "Tìm hiểu ngôn ngữ trong đời sống xã hội hiện đại", ["I","III"], {ycc:"Phân tích được bản chất xã hội - văn hoá của ngôn ngữ, sự phát triển của ngôn ngữ trong đời sống hiện đại và biết vận dụng các yếu tố mới của ngôn ngữ trong giao tiếp phù hợp.", sanpham:"Bài viết, thảo luận hoặc hồ sơ khảo sát nhỏ về ngôn ngữ trong đời sống hiện đại."}),
+    vanTopic("Chuyên đề 11.3", "Đọc, viết và giới thiệu về một tác giả văn học", ["I","III"], {ycc:"Biết đọc có định hướng về một tác giả văn học, xây dựng hồ sơ tác giả, viết bài giới thiệu và thuyết trình về tác giả đã chọn.", sanpham:"Hồ sơ tác giả, bài giới thiệu và phần trình bày cá nhân/nhóm."})
+  ]},
+  12: { sgk: [
+    vanLesson("Tiểu thuyết", "Bài 1. Khả năng lớn lao của tiểu thuyết", ["Xuân Tóc Đỏ cứu quốc", "Mùa lá rụng trong vườn"], "Biện pháp tu từ nói mỉa, nghịch ngữ", "Viết bài văn nghị luận so sánh, đánh giá hai tác phẩm truyện", "Trình bày kết quả so sánh, đánh giá hai tác phẩm truyện", ["I","III"]),
+    vanLesson("Thơ", "Bài 2. Những thế giới thơ", ["Cảm hoài", "Tây Tiến", "Đàn ghi ta của Lor-ca"], "Tác dụng của một số biện pháp tu từ trong thơ", "Viết bài văn nghị luận so sánh, đánh giá hai tác phẩm thơ", "Trình bày kết quả so sánh, đánh giá hai tác phẩm thơ", ["I","III"]),
+    vanLesson("Văn bản nghị luận", "Bài 3. Lập luận trong văn bản nghị luận", ["Câu hiến chiếu", "Tôi có một ước mơ", "Một thời đại trong thi ca"], "Đặc điểm của lí lẽ, bằng chứng và thao tác lập luận", "Viết bài văn nghị luận về một vấn đề xã hội", "Trình bày quan điểm về một vấn đề xã hội", ["III","IV"]),
+    vanLesson("Văn bản thông tin", "Bài 4. Dữ liệu trong văn bản thông tin", ["Pa-ra-na", "Giáo dục khai phóng ở Việt Nam nhìn từ Đông Kinh Nghĩa Thục", "Đổi mới"], "Tôn trọng và bảo vệ quyền sở hữu trí tuệ", "Viết thư trao đổi về công việc hoặc một vấn đề đáng quan tâm", "Tranh biện về một vấn đề đời sống", ["I","VI"]),
+    vanLesson("Kịch", "Bài 5. Nhân vật và xung đột trong bi kịch", ["Sống, hay không sống - đó là vấn đề", "Vĩnh biệt Cửu Trùng Đài"], "Đối thoại, độc thoại và xung đột kịch", "Viết báo cáo nghiên cứu về một vấn đề tự nhiên, xã hội", "Trình bày báo cáo kết quả nghiên cứu về một vấn đề đáng quan tâm", ["I","V"]),
+    vanLesson("Hồ Chí Minh", "Bài 6. Hồ Chí Minh - “Văn hoá phải soi đường cho quốc dân đi”", ["Tác gia Hồ Chí Minh", "Tuyên ngôn Độc lập", "Mộ", "Nguyên tiêu", "Những trò lố hay là Va-ren và Phan Bội Châu"], "Một số biện pháp làm tăng tính khẳng định, phủ định trong văn bản nghị luận", "Viết báo cáo kết quả của bài tập dự án", "Trình bày kết quả của bài tập dự án", ["I","V"]),
+    vanLesson("Tác phẩm kí", "Bài 7. Sự thật trong tác phẩm kí", ["Nghệ thuật băm thịt gà", "Bước vào đời"], "Ngôn ngữ trang trọng và ngôn ngữ thân mật", "Viết bài văn nghị luận về một vấn đề liên quan đến tuổi trẻ", "Trình bày quan điểm về một vấn đề liên quan đến tuổi trẻ", ["III","IV"]),
+    vanLesson("Văn bản thông tin", "Bài 8. Dữ liệu trong văn bản thông tin", ["Pa-ra-na", "Giáo dục khai phóng ở Việt Nam nhìn từ Đông Kinh Nghĩa Thục", "Đổi mới"], "Tôn trọng và bảo vệ quyền sở hữu trí tuệ", "Viết thư trao đổi về công việc hoặc một vấn đề đáng quan tâm", "Tranh biện về một vấn đề đời sống", ["I","VI"]),
+    vanLesson("Văn học và cuộc đời", "Bài 9. Văn học và cuộc đời", ["Vội vàng", "Trở về", "Hồn Trương Ba, da hàng thịt"], "Giữ gìn và phát triển tiếng Việt", "Viết bài phát biểu trong lễ phát động một phong trào hoặc một hoạt động xã hội", "Thuyết trình về một vấn đề liên quan đến cơ hội và thách thức đối với đất nước", ["III","V"])
+  ], cd: [
+    vanTopic("Chuyên đề 12.1", "Tập nghiên cứu và viết báo cáo về một vấn đề văn học hiện đại", ["I","V"], {ycc:"Biết lựa chọn một vấn đề văn học hiện đại, tổ chức nghiên cứu, viết báo cáo và thuyết trình kết quả với dẫn chứng phù hợp.", sanpham:"Báo cáo nghiên cứu, đề cương và phần thuyết trình về văn học hiện đại."}),
+    vanTopic("Chuyên đề 12.2", "Tìm hiểu về một tác phẩm nghệ thuật chuyển thể từ văn học", ["I","III"], {ycc:"Biết xem, nghe, đọc và phân tích một tác phẩm nghệ thuật được chuyển thể từ văn học; viết bài phân tích, giới thiệu và thực hành chuyển thể đơn giản.", sanpham:"Bài phân tích, sản phẩm chuyển thể hoặc phần giới thiệu về tác phẩm nghệ thuật chuyển thể."}),
+    vanTopic("Chuyên đề 12.3", "Tìm hiểu phong cách sáng tác của một trường phái văn học: cổ điển, hiện thực hoặc lãng mạn", ["I","III"], {ycc:"Nhận diện và nghiên cứu được đặc điểm phong cách sáng tác của một trường phái văn học, viết bài giới thiệu và thuyết trình về phong cách ấy qua các tác phẩm cụ thể.", sanpham:"Bài giới thiệu, poster hoặc thuyết trình về một trường phái văn học."})
+  ]}
+};
 function subjectCurriculumContext(){
+  if(isVAN()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN NGỮ VĂN\n${vanCurriculumText(activeGrade())}\n`;
   if(isVL()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN VẬT LÍ\n${vlCurriculumText(activeGrade())}\n`;
   if(isBIO()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN SINH HỌC\n${bioCurriculumText(activeGrade())}\n`;
   return "";
@@ -1767,6 +1901,7 @@ function activeData(){
   if(isLS()) return LS_DATA[g] || LS_DATA[10];
   if(isVL()) return VL_DATA[g] || VL_DATA[10];
   if(isBIO()) return BIO_DATA[g] || BIO_DATA[10];
+  if(isVAN()) return VAN_DATA[g] || VAN_DATA[10];
   return ({"10": DATA, "11": DATA11, "12": DATA12})[g];
 }
 function activeGrade(){ return $("selGrade")?.value || "10"; }
@@ -1947,7 +2082,7 @@ function createLegacyDeptPlan(){
   const deptName = $("inpDeptName")?.value.trim() || `Tổ ${subjectName()}`;
   const schoolYear = $("inpSchoolYear")?.value.trim() || "Năm học ............";
   const source = $("selSource").value;
-  const lessons = DATA[source] || [];
+  const lessons = activeData()[source] || [];
   const grouped = lessons.reduce((groups, lesson) => {
     (groups[lesson.chuong] ||= []).push(lesson);
     return groups;
@@ -1957,10 +2092,12 @@ function createLegacyDeptPlan(){
     return `- ${chapter}\\n${lessonRows}`;
   }).join("\\n");
   const monTen = subjectName();
-  const nangLucDacThuTen = isLS() ? "năng lực lịch sử" : (isVL() ? "năng lực vật lí" : (isBIO() ? "năng lực sinh học" : "năng lực hóa học"));
+  const nangLucDacThuTen = isLS() ? "năng lực lịch sử" : (isVL() ? "năng lực vật lí" : (isBIO() ? "năng lực sinh học" : (isVAN() ? "năng lực ngữ văn" : "năng lực hóa học")));
   const dinhHuongToChuc = isLS()
     ? "- Tăng cường khai thác tư liệu, sử liệu, bản đồ/lược đồ, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác, khách quan của sử liệu, bản quyền học liệu và an toàn khi tổ chức hoạt động trải nghiệm/thực hành lịch sử."
-    : "- Tăng cường thí nghiệm, mô phỏng, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác khoa học, bản quyền học liệu và an toàn khi tổ chức thực hành/thí nghiệm.";
+    : isVAN()
+      ? "- Tăng cường đọc hiểu văn bản, thảo luận, viết ngắn, nói và nghe; tổ chức hoạt động theo tiến trình khám phá văn bản, thực hành tiếng Việt và tạo lập văn bản phù hợp đặc trưng bài học.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt, nhất là tìm kiếm tư liệu, trình bày cảm nhận, thuyết trình hoặc tạo sản phẩm đọc - viết - nói - nghe.\\n- Giáo viên rà soát độ phù hợp ngữ liệu, tính chính xác của thông tin, bản quyền học liệu và định hướng thẩm mĩ, nhân văn khi tổ chức dạy học Ngữ văn."
+      : "- Tăng cường thí nghiệm, mô phỏng, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác khoa học, bản quyền học liệu và an toàn khi tổ chức thực hành/thí nghiệm.";
   const plan = `KẾ HOẠCH GIÁO DỤC MÔN ${monTen.toUpperCase()} ${activeGrade()}\\n${deptName}\\n${schoolYear}\\n\\n1. Mục tiêu chung\\n- Thực hiện Chương trình GDPT 2018 môn ${monTen} ${activeGrade()}; bảo đảm yêu cầu cần đạt, phát triển ${nangLucDacThuTen}, năng lực chung và phẩm chất học sinh.\\n- Tích hợp năng lực số ở mức Nâng cao 1 phù hợp từng bài học; ưu tiên nhiệm vụ tìm kiếm, kiểm chứng, tạo sản phẩm số và sử dụng công cụ số an toàn, có trách nhiệm.\\n- Thống nhất sử dụng kế hoạch bài dạy theo Công văn 5512; giáo viên được điều chỉnh tình huống, phương pháp, câu hỏi, sản phẩm và mức độ phân hóa theo lớp phụ trách.\\n\\n2. Định hướng tổ chức dạy học\\n${dinhHuongToChuc}\\n\\n3. Phân phối nội dung đề xuất\\n${distribution}\\n\\n4. Kiểm tra, đánh giá\\n- Đánh giá thường xuyên bằng quan sát, hỏi đáp, phiếu học tập, sản phẩm học tập và tự/đánh giá đồng đẳng.\\n- Đánh giá định kì thực hiện theo kế hoạch nhà trường; ma trận và đặc tả được tổ thống nhất trước khi triển khai.\\n\\n5. Thống nhất chuyên môn\\n- Dùng các mã chỉ báo NLS x.y.NC1a/b đúng với nhiệm vụ số của bài; không gắn mã hình thức.\\n- Họp tổ rà soát tiến độ, học liệu, thiết bị và điều chỉnh kế hoạch khi có thay đổi thực tế.\\n\\nGhi chú: Đây là bản khung do ứng dụng tạo. Tổ chuyên môn bổ sung tuần dạy, số tiết thực tế, chuyên đề, kế hoạch kiểm tra và các yêu cầu riêng của nhà trường trước khi ban hành.`;
   $("txtDeptPlan").value = plan;
   saveDeptPlan(false);
@@ -2030,10 +2167,11 @@ function createDeptPlan(){
   if($("deptSchool")) $("deptSchool").innerHTML = `TRƯỜNG: ........................................<br>Tổ: ${subjectName().toUpperCase()}`;
   const vlDeptNote = isVL() ? `<br>5. Định hướng chương trình tổng thể: ${esc(VL_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((VL_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
   const bioDeptNote = isBIO() ? `<br>5. Định hướng chương trình tổng thể: ${esc(BIO_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((BIO_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
+  const vanDeptNote = isVAN() ? `<br>5. Định hướng chương trình tổng thể: ${esc(VAN_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((VAN_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
   if($("deptSituation")) $("deptSituation").innerHTML = `1. Số lớp: .... ; Số học sinh: ....
 2. Tình hình đội ngũ: Số giáo viên: .... ; Trình độ đào tạo: ........................................
 3. Thiết bị dạy học: Thống kê thiết bị có thể sử dụng để tổ chức dạy học môn ${subjectName()}.
-4. Phòng học bộ môn/phòng thí nghiệm/phòng đa năng: Thống kê các phòng, không gian có thể sử dụng.${vlDeptNote}${bioDeptNote}`;
+4. Phòng học bộ môn/phòng thí nghiệm/phòng đa năng: Thống kê các phòng, không gian có thể sử dụng.${vlDeptNote}${bioDeptNote}${vanDeptNote}`;
   $("deptTitle").innerHTML = `HOẠT ĐỘNG GIÁO DỤC ${subjectName().toUpperCase()} KHỐI LỚP ${grade}<br>(Năm học 2026 - 2027)`;
   const lessons = activeData().sgk || [];
   const deptDeviceRows = isLS() ? [
@@ -2048,6 +2186,10 @@ function createDeptPlan(){
     [1,"Kính hiển vi, lam kính, lamen, mẫu vật/tranh ảnh/mô hình sinh học", "....", "Các bài quan sát tế bào, mô, cơ quan, vi sinh vật hoặc mẫu sinh học", "Bổ sung theo điều kiện thực tế"],
     [2,"Bộ dụng cụ thực hành Sinh học, hoá chất an toàn, mẫu vật và thiết bị đo môi trường", "....", "Các bài thực hành, dự án điều tra, thí nghiệm sinh lí - sinh thái", ""],
     [3,"Máy chiếu, máy tính, học liệu số, video/mô phỏng sinh học, cơ sở dữ liệu và bản đồ số", "....", "Các bài cần trực quan hóa quá trình, phân tích dữ liệu hoặc báo cáo dự án", ""]
+  ] : isVAN() ? [
+    [1,"SGK, SGV, phiếu học tập đọc hiểu - viết - nói nghe, ngữ liệu bổ trợ", "....", "Các bài đọc hiểu văn bản, thực hành tiếng Việt, viết, nói và nghe", "Bổ sung theo điều kiện thực tế"],
+    [2,"Máy chiếu, máy tính, loa, học liệu số, video/âm thanh, kho tư liệu văn học - ngôn ngữ", "....", "Các bài cần nghe ngữ liệu, trình chiếu văn bản, thuyết trình hoặc khai thác học liệu số", ""],
+    [3,"Bảng tiêu chí đánh giá bài viết/bài nói, hồ sơ học tập, sản phẩm đọc sáng tạo", "....", "Hoạt động luyện viết, thảo luận, sân khấu hóa, dự án đọc và chuyên đề", ""]
   ] : [
     [1,"Bộ dụng cụ thí nghiệm và hóa chất theo danh mục nhà trường", "....", "Các bài có thí nghiệm/thực hành", "Bổ sung theo điều kiện thực tế"],
     [2,"Máy chiếu, máy tính, học liệu số, mô phỏng", "....", "Các bài cần trực quan hóa hoặc khai thác học liệu số", ""],
@@ -2066,6 +2208,10 @@ function createDeptPlan(){
     [1,"Phòng thực hành bộ môn Sinh học", "....", "Dạy các bài quan sát mẫu vật, thực hành thí nghiệm, xử lí số liệu sinh học", ""],
     [2,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác học liệu số, mô phỏng, cơ sở dữ liệu sinh học, kiểm tra trực tuyến", ""],
     [3,"Vườn trường/không gian trải nghiệm/thực địa địa phương", "....", "Điều tra sinh thái, dự án môi trường, hoạt động STEM Sinh học", ""]
+  ] : isVAN() ? [
+    [1,"Phòng học có máy chiếu, âm thanh hoặc phòng đa năng", "....", "Dạy đọc hiểu, trình chiếu ngữ liệu, nghe - nói, thuyết trình và hoạt động sân khấu hóa", ""],
+    [2,"Thư viện/phòng đọc/góc học liệu", "....", "Khai thác văn bản, tài liệu tham khảo, dự án đọc mở rộng và giới thiệu sách", ""],
+    [3,"Không gian câu lạc bộ, sân khấu nhỏ hoặc khu trải nghiệm", "....", "Tổ chức nói nghe, diễn đọc, đóng vai, tọa đàm văn học và chuyên đề", ""]
   ] : [
     [1,"Phòng thực hành bộ môn Hóa học", "....", "Dạy các bài thực hành/thí nghiệm", ""],
     [2,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác học liệu số, mô phỏng, kiểm tra trực tuyến", ""],
@@ -2220,7 +2366,7 @@ function buildPaperSkeleton(){
    ====================================================================== */
 const TABLE_OUTPUT_RULE = ` QUY ĐỊNH ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC): chỉ trả về DUY NHẤT mã HTML, bắt đầu ngay từ ký tự đầu tiên bằng <table class="khbd-table">, không thêm chữ giải thích, lời dẫn hay markdown nào trước hoặc sau bảng. Cấu trúc đúng như sau: <table class="khbd-table"><thead><tr><th>Hoạt động của GV và HS</th><th>Sản phẩm dự kiến</th><th>Năng lực số (NLS)</th></tr></thead><tbody><tr><td>...</td><td>...</td><td>...</td></tr></tbody></table>. BẮT BUỘC điền đầy đủ nội dung cho CẢ 3 CỘT của MỌI dòng — tuyệt đối không để cột Sản phẩm dự kiến hoặc Năng lực số (NLS) trống hoặc bỏ dở; viết ngắn gọn, súc tích để đảm bảo hoàn chỉnh hết bảng (kết thúc bằng đúng thẻ </table>) trong giới hạn độ dài cho phép. Trong nội dung mỗi <td>, nếu có nhiều dòng/bước thì nối các dòng bằng thẻ <br> (không dùng \\n, không dùng <li>/<ul>). Cột Năng lực số (NLS) ghi mỗi mã trong một thẻ <span class="nls-badge">mã</span>, nhiều mã nối nhau bằng <br>.`;
 function getSections(){
-  const nangLucDacThu = isLS() ? "Năng lực lịch sử" : (isVL() ? "Năng lực vật lí" : (isBIO() ? "Năng lực sinh học" : "Năng lực hoá học"));
+  const nangLucDacThu = isLS() ? "Năng lực lịch sử" : (isVL() ? "Năng lực vật lí" : (isBIO() ? "Năng lực sinh học" : (isVAN() ? "Năng lực ngữ văn" : "Năng lực hoá học")));
   return [
   { key:"mucTieu", label:"Mục tiêu",
     ask:`Soạn phần "I. MỤC TIÊU" của KHBD. Trình bày theo 4 mục: 1. Kiến thức; 2. Năng lực, gồm 2.1. Năng lực chung, 2.2. ${nangLucDacThu}, 2.3. Năng lực số; 3. Phẩm chất. Ở mục 2.3 phải nêu rõ mã chỉ báo NLS dạng x.y.NC1a/b và biểu hiện cụ thể gắn với bài học, không chỉ nêu tên miền. Dùng dấu "- " đầu dòng, không dùng markdown (không **, không #). CHỈ trả về văn bản thuần (không dùng thẻ HTML).` },
@@ -2244,6 +2390,8 @@ function buildSystemPrompt(){
       ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Vật lí THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ vật lí phổ thông; chú trọng thí nghiệm, mô hình hóa, xử lí số liệu, đồ thị, giải thích hiện tượng và an toàn phòng thực hành.`
       : isBIO()
         ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Sinh học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ sinh học phổ thông; chú trọng quan sát, thực hành, phân tích dữ liệu sinh học, mối liên hệ cấu trúc - chức năng, cơ chế - quá trình, bảo đảm an toàn sinh học và đạo đức sinh học.`
+        : isVAN()
+          ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Ngữ văn THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ ngữ văn; bám đặc trưng thể loại, yêu cầu đọc, viết, nói và nghe, thực hành tiếng Việt, định hướng phát triển năng lực cảm thụ, phân tích, tạo lập văn bản và giao tiếp thẩm mĩ.`
         : `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Hoá học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ hoá học phổ thông.`;
   return `${subjectClause} Không dùng markdown (không in đậm **, không tiêu đề #). Học sinh lớp ${activeGrade()} tương ứng mức "Nâng cao 1" trong Khung năng lực số (Thông tư 02/2025/TT-BGDĐT, cụ thể hoá tại Phụ lục kèm Công văn 3456/BGDĐT-GDPT): các em xử lý nhiệm vụ/vấn đề đa dạng, có thể tự chủ và hướng dẫn người khác. Khi tích hợp năng lực số, chỉ tích hợp tự nhiên, lồng ghép vào đúng "địa chỉ" của bài học (không thêm hoạt động lan man ngoài nội dung), và phải bám sát các yêu cầu cần đạt (chỉ báo) của từng năng lực thành phần được cung cấp trong ngữ cảnh — không chỉ nêu tên miền chung. Luôn tuân thủ ĐÚNG định dạng đầu ra được yêu cầu trong từng câu hỏi cụ thể (văn bản thuần hoặc mã HTML <table>) và luôn viết đầy đủ, hoàn chỉnh hết bảng/nội dung được yêu cầu — đây là yêu cầu kỹ thuật bắt buộc để hệ thống hiển thị đúng, không được thêm, bớt định dạng hoặc bỏ dở giữa bảng.`;
 }
@@ -2475,10 +2623,72 @@ function sgvGuideForLesson_BIO(lesson=currentLesson){
   return guide;
 }
 
+function sgvGuideForLesson_VAN(lesson=currentLesson){
+  const text = `${lesson?.chuong || ""} ${lesson?.bai || ""} ${lesson?.demuc || ""}`.toLowerCase();
+  const grade = activeGrade();
+  const isPoetry = /thơ|trữ tình/.test(text);
+  const isStory = /truyện|truyện kể|tiểu thuyết|kí|sử thi/.test(text);
+  const isDrama = /kịch|sân khấu|bi kịch|hài kịch|tích trò/.test(text);
+  const isArgument = /nghị luận|thuyết phục/.test(text);
+  const isInfo = /thông tin|dữ liệu/.test(text);
+  const isWriting = /viết|báo cáo|giới thiệu/.test(text);
+  const isSpeaking = /nói|nghe|thảo luận|thuyết trình/.test(text);
+  const isAuthor = /nguyễn trãi|nguyễn du|hồ chí minh|tác giả|phong cách sáng tác/.test(text);
+  const guide = {
+    source: `Chương trình GDPT 2018 môn Ngữ văn và SGV Ngữ văn ${grade} - dùng như định hướng thiết kế hoạt động đọc, viết, nói nghe, thực hành tiếng Việt và đánh giá.`,
+    focus: `${(VAN_CURRICULUM[grade] || VAN_CURRICULUM[10]).overview} Tổ chức hoạt động theo mạch: khởi động gợi vấn đề đọc - khám phá văn bản/ngữ liệu - luyện tập đọc viết nói nghe - vận dụng, mở rộng gắn với trải nghiệm đọc và đời sống.`,
+    devices: ["SGV/SGK Ngữ văn " + grade, "phiếu học tập đọc hiểu và viết", "bảng tiêu chí đánh giá bài nói/bài viết", "máy chiếu hoặc màn hình trình chiếu", "học liệu số, âm thanh hoặc video phù hợp"],
+    methods: ["đọc hiểu theo câu hỏi gợi mở", "thảo luận cặp/nhóm", "viết ngắn, trình bày miệng, phản hồi và chỉnh sửa sản phẩm"],
+    assessment: ["quan sát quá trình đọc - viết - nói nghe", "phiếu học tập/bài viết ngắn", "sản phẩm thuyết trình, đoạn văn, bài nói hoặc sản phẩm đọc sáng tạo"]
+  };
+  if(isPoetry){
+    guide.devices.push("bản đọc diễn cảm, âm thanh ngâm/đọc thơ, hình ảnh gợi cảm hứng", "phiếu phân tích hình ảnh, nhịp điệu, cấu tứ");
+    guide.methods.push("đọc diễn cảm", "khai thác hình ảnh, từ ngữ, nhịp điệu", "so sánh cảm hứng và tiếng nói trữ tình");
+    guide.assessment.push("đoạn cảm nhận ngắn", "sơ đồ mạch cảm xúc hoặc bảng phân tích hình ảnh thơ");
+  }
+  if(isStory){
+    guide.devices.push("sơ đồ cốt truyện, nhân vật, điểm nhìn", "ngữ liệu trích đoạn và câu hỏi đọc hiểu phân tầng");
+    guide.methods.push("theo dõi cốt truyện và điểm nhìn", "phân tích nhân vật, chi tiết, bối cảnh", "liên hệ với trải nghiệm đọc và đời sống");
+    guide.assessment.push("phiếu phân tích nhân vật/chi tiết", "đoạn văn nêu nhận xét có dẫn chứng");
+  }
+  if(isDrama){
+    guide.devices.push("video trích đoạn sân khấu, kịch bản đọc vai, không gian trình diễn nhỏ", "phiếu theo dõi xung đột, lời thoại, hành động");
+    guide.methods.push("đọc phân vai", "đóng vai hoặc sân khấu hóa ngắn", "phân tích xung đột, hành động kịch, tiếng cười hoặc bi kịch");
+    guide.assessment.push("bảng quan sát đọc vai/đóng vai", "sản phẩm trình bày về xung đột và ý nghĩa tư tưởng");
+  }
+  if(isArgument){
+    guide.devices.push("sơ đồ luận điểm - lí lẽ - bằng chứng", "mẫu đoạn/bài nghị luận", "phiếu phản biện ý kiến");
+    guide.methods.push("xác định luận điểm, lí lẽ, bằng chứng", "thảo luận phản biện", "viết đoạn nghị luận ngắn và chỉnh sửa");
+    guide.assessment.push("bảng xác định cấu trúc lập luận", "đoạn văn nghị luận có dẫn chứng");
+  }
+  if(isInfo){
+    guide.devices.push("văn bản thông tin, bảng biểu, dữ liệu, infographic", "phiếu kiểm chứng nguồn tin");
+    guide.methods.push("đọc lướt - đọc sâu", "phân tích cách trình bày dữ liệu", "kiểm chứng độ tin cậy của nguồn");
+    guide.assessment.push("bảng đọc hiểu dữ liệu", "sản phẩm tóm tắt hoặc infographic ngắn");
+  }
+  if(isWriting){
+    guide.devices.push("rubric viết, checklist rà soát nội dung - diễn đạt - chính tả", "mẫu sản phẩm tham khảo");
+    guide.methods.push("lập dàn ý", "viết bản nháp - nhận phản hồi - chỉnh sửa", "công bố sản phẩm");
+    guide.assessment.push("bản nháp và bản hoàn chỉnh", "phiếu tự đánh giá và đánh giá đồng đẳng");
+  }
+  if(isSpeaking){
+    guide.devices.push("loa, micro nếu cần, phiếu quan sát bài nói/nghe", "công cụ ghi âm hoặc trình chiếu");
+    guide.methods.push("thảo luận nhóm", "thuyết trình ngắn", "nghe phản hồi và điều chỉnh cách trình bày");
+    guide.assessment.push("bảng tiêu chí bài nói/nghe", "sản phẩm trình bày miệng hoặc video ngắn");
+  }
+  if(isAuthor){
+    guide.devices.push("tư liệu về tác giả, bối cảnh văn hóa - lịch sử, sơ đồ phong cách sáng tác");
+    guide.methods.push("khai thác tư liệu tác giả", "liên hệ tác phẩm với bối cảnh", "khái quát đặc điểm phong cách");
+    guide.assessment.push("bảng hệ thống đặc điểm tác giả/phong cách", "đoạn trình bày khái quát có dẫn chứng");
+  }
+  return guide;
+}
+
 function sgvGuideForLesson(lesson=currentLesson){
   if(isLS()) return sgvGuideForLesson_LS(lesson);
   if(isVL()) return sgvGuideForLesson_VL(lesson);
   if(isBIO()) return sgvGuideForLesson_BIO(lesson);
+  if(isVAN()) return sgvGuideForLesson_VAN(lesson);
   return sgvGuideForLesson_HOA(lesson);
 }
 
@@ -2588,9 +2798,9 @@ Thực hiện nhiệm vụ: HS suy nghĩ cá nhân, trao đổi nhanh theo cặp
 Báo cáo, thảo luận: Đại diện HS nêu dự đoán, căn cứ và câu hỏi còn băn khoăn.
 Kết luận, nhận định: GV nhận xét, chốt vấn đề học tập và dẫn dắt vào bài.`;
   const hd2Gv = `Giao nhiệm vụ học tập: GV chia nhiệm vụ theo các đề mục SGK, tổ chức ${variant.grouping} và sử dụng kĩ thuật ${variant.technique}, phát phiếu học tập và hướng dẫn nguồn học liệu/công cụ số phù hợp.
-Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, ${isLS() ? "khai thác tư liệu, sử liệu, bản đồ/lược đồ" : (isVL() ? "quan sát hiện tượng, thí nghiệm/mô phỏng, đo đạc, phân tích số liệu và đồ thị" : (isBIO() ? "quan sát mẫu vật/hình ảnh, phân tích sơ đồ, dữ liệu sinh học hoặc mô phỏng quá trình sống" : "phân tích dữ liệu, quan sát thí nghiệm/mô phỏng"))} hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
+Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, ${isLS() ? "khai thác tư liệu, sử liệu, bản đồ/lược đồ" : (isVL() ? "quan sát hiện tượng, thí nghiệm/mô phỏng, đo đạc, phân tích số liệu và đồ thị" : (isBIO() ? "quan sát mẫu vật/hình ảnh, phân tích sơ đồ, dữ liệu sinh học hoặc mô phỏng quá trình sống" : (isVAN() ? "đọc hiểu văn bản/ngữ liệu, phân tích chi tiết nghệ thuật, lập dàn ý, viết ngắn, nói và nghe theo yêu cầu của bài" : "phân tích dữ liệu, quan sát thí nghiệm/mô phỏng")))} hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
 Báo cáo, thảo luận: Các nhóm trình bày kết quả; nhóm khác nhận xét, bổ sung, đặt câu hỏi và kiểm chứng thông tin.
-Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh ${isLS() ? "sự kiện/niên đại/khái niệm" : (isVL() ? "khái niệm, định luật, mô hình, công thức và đơn vị đo" : (isBIO() ? "khái niệm, cơ chế, quá trình, mối liên hệ cấu trúc - chức năng" : "thuật ngữ/công thức"))} trọng tâm.
+Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh ${isLS() ? "sự kiện/niên đại/khái niệm" : (isVL() ? "khái niệm, định luật, mô hình, công thức và đơn vị đo" : (isBIO() ? "khái niệm, cơ chế, quá trình, mối liên hệ cấu trúc - chức năng" : (isVAN() ? "đặc trưng thể loại, chi tiết nghệ thuật, cách đọc hiểu và cách diễn đạt/viết phù hợp" : "thuật ngữ/công thức")))} trọng tâm.
 ${taskLines}`;
   const hd3Gv = `Giao nhiệm vụ học tập: GV giao câu hỏi/bài tập luyện tập theo ${variant.questionFrame} cho cá nhân hoặc nhóm nhỏ.
 Thực hiện nhiệm vụ: HS hoàn thành bài tập, có thể dùng ${variant.digitalTool}, phiếu số hoặc công cụ kiểm tra kết quả theo hướng dẫn.
@@ -2606,6 +2816,8 @@ Kết luận, nhận định: GV nhận xét theo ${variant.assessmentAngle}; b�
       ? `2.2. Năng lực vật lí\n- Nhận thức vật lí: Mô tả, giải thích và sử dụng đúng khái niệm, định luật, mô hình, công thức, đơn vị đo trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ vật lí: Quan sát hiện tượng, thiết kế/thực hiện thí nghiệm hoặc mô phỏng, thu thập và xử lí số liệu, vẽ đồ thị để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống thực tiễn, giải thích hiện tượng và đề xuất phương án kĩ thuật đơn giản phù hợp nội dung bài học.`
       : isBIO()
         ? `2.2. Năng lực sinh học\n- Nhận thức sinh học: Mô tả, giải thích và sử dụng đúng khái niệm, cơ chế, quá trình, quy luật sinh học trong bài.\n- Tìm hiểu thế giới sống: Quan sát mẫu vật, hình ảnh, mô hình hoặc mô phỏng; thu thập, xử lí dữ liệu sinh học; rút ra kết luận có căn cứ.\n- Vận dụng kiến thức, kĩ năng đã học: Giải thích hiện tượng sống, liên hệ sức khoẻ, môi trường, sản xuất và đề xuất giải pháp phù hợp.`
+        : isVAN()
+          ? `2.2. Năng lực ngữ văn\n- Năng lực đọc: Đọc hiểu văn bản theo đặc trưng thể loại; nhận biết, phân tích và đánh giá được nội dung, nghệ thuật, thông điệp và giá trị của văn bản/ngữ liệu trong bài.\n- Năng lực viết, nói và nghe: Trình bày ý kiến, thảo luận, viết đoạn/bài hoặc sản phẩm nói nghe phù hợp yêu cầu bài học, có lí lẽ và dẫn chứng.\n- Năng lực cảm thụ và vận dụng: Liên hệ văn bản với trải nghiệm, bối cảnh văn hóa - xã hội; vận dụng kiến thức tiếng Việt và văn học để tạo lập, chỉnh sửa và chia sẻ sản phẩm ngôn ngữ phù hợp.`
         : `2.2. Năng lực hoá học\n- Nhận thức hoá học: Mô tả, giải thích và sử dụng đúng khái niệm, quy luật, công thức trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ hoá học: Quan sát, phân tích dữ liệu, thí nghiệm hoặc mô phỏng để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống gắn với nội dung bài học.`;
   const map = {
     mucTieu: `1. Kiến thức\n- Trình bày và vận dụng được các nội dung trọng tâm của bài: ${ycc}\n- Liên hệ được kiến thức với hiện tượng, bài tập hoặc tình huống thực tiễn phù hợp với chủ đề "${l.bai}".\n- Bám định hướng SGV: ${sgv.focus}\n\n2. Năng lực\n2.1. Năng lực chung\n- Tự chủ và tự học: Chủ động chuẩn bị bài, khai thác học liệu và hoàn thành nhiệm vụ được giao.\n- Giao tiếp và hợp tác: Thảo luận, trình bày, phản biện kết quả học tập trong nhóm/lớp.\n- Giải quyết vấn đề và sáng tạo: Lựa chọn cách tiếp cận phù hợp để giải quyết nhiệm vụ học tập và tình huống thực tiễn.\n\n${nangLucDacThuBlock}\n\n2.3. Năng lực số tích hợp\n${nlsGoalText()}\n\n3. Phẩm chất\n- Phù hợp với ${classProfile}; điều kiện tổ chức: ${facilities}.\n- Chăm chỉ trong chuẩn bị bài, ghi chép và hoàn thành nhiệm vụ học tập.\n- Trung thực khi xử lí dữ liệu, trích dẫn nguồn và báo cáo kết quả.\n- Trách nhiệm khi hợp tác nhóm, sử dụng thiết bị và công cụ số an toàn.${commonTail}`,
@@ -2614,7 +2826,9 @@ Kết luận, nhận định: GV nhận xét theo ${variant.assessmentAngle}; b�
       : isVL()
         ? `a) Đối với giáo viên\n- SGV và SGK Vật lí ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video hiện tượng, thí nghiệm, mô phỏng, bảng số liệu và đồ thị phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn điện, cơ học, quang học và an toàn khi dùng thiết bị đo.\n\nb) Đối với học sinh\n- SGK Vật lí ${activeGrade()}, vở ghi, máy tính cầm tay, thước/compa nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi dự đoán hiện tượng, nhiệm vụ đo đạc/xử lí số liệu hoặc tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
         : isBIO()
-          ? `a) Đối với giáo viên\n- SGV và SGK Sinh học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; tranh/ảnh, mẫu vật, mô hình, video/mô phỏng, bảng dữ liệu sinh học phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn sinh học, vệ sinh phòng thực hành và đạo đức khi khai thác thông tin sức khoẻ/di truyền.\n\nb) Đối với học sinh\n- SGK Sinh học ${activeGrade()}, vở ghi, thiết bị có kết nối Internet khi được GV cho phép, dụng cụ học tập/thực hành theo yêu cầu của GV.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi quan sát, nhiệm vụ thu thập/xử lí dữ liệu sinh học hoặc tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
+        ? `a) Đối với giáo viên\n- SGV và SGK Sinh học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; tranh/ảnh, mẫu vật, mô hình, video/mô phỏng, bảng dữ liệu sinh học phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn sinh học, vệ sinh phòng thực hành và đạo đức khi khai thác thông tin sức khoẻ/di truyền.\n\nb) Đối với học sinh\n- SGK Sinh học ${activeGrade()}, vở ghi, thiết bị có kết nối Internet khi được GV cho phép, dụng cụ học tập/thực hành theo yêu cầu của GV.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi quan sát, nhiệm vụ thu thập/xử lí dữ liệu sinh học hoặc tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
+          : isVAN()
+            ? `a) Đối với giáo viên\n- SGV và SGK Ngữ văn ${activeGrade()}; kế hoạch bài dạy, phiếu học tập đọc hiểu - viết - nói nghe, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; văn bản/ngữ liệu, tranh ảnh, âm thanh, video, tư liệu văn học - ngôn ngữ phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng bản in, phiếu học tập, nghe nhìn ngoại tuyến hoặc tư liệu số tải sẵn khi kết nối Internet không ổn định; bảo đảm bản quyền học liệu và sự phù hợp của ngữ liệu.\n\nb) Đối với học sinh\n- SGK Ngữ văn ${activeGrade()}, vở ghi, dụng cụ ghi chú/đánh dấu văn bản, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi đọc hiểu, nhiệm vụ viết, nói và nghe hoặc tìm kiếm/kiểm chứng thông tin theo hướng dẫn của GV.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo đặc điểm lớp.${commonTail}`
           : `a) Đối với giáo viên\n- SGV và SGK Hóa học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video/thí nghiệm/mô phỏng phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn khi sử dụng hóa chất, dụng cụ và thiết bị số.\n\nb) Đối với học sinh\n- SGK Hóa học ${activeGrade()}, vở ghi, máy tính cầm tay nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`,
     hd1: activityTableHtml(hd1Gv, `- Câu trả lời/dự đoán ban đầu của HS.\n- Vấn đề học tập cần giải quyết trong bài "${l.bai}".`, nlsCodes(0, 2)),
     hd2: activityTableHtml(hd2Gv, `- Phiếu học tập hoặc vở ghi hoàn thiện theo từng đề mục.\n- Kết luận kiến thức chính bám sát yêu cầu cần đạt: ${ycc}\n- Minh chứng khai thác/kiểm chứng học liệu số nếu có.`, nlsCodes(1, 3)),
@@ -3009,13 +3223,15 @@ async function downloadTeacherDocx(){
 function wordCss(){
   return `<style>
     @page{size:A4 landscape;margin:1.1cm 1.5cm 1.1cm 2.5cm;}
-    body,p,div,td,li,h3,h4{text-align:left!important;text-justify:none!important;}
-    body{font-family:"Times New Roman",serif;font-size:12pt;color:#111;line-height:1.35;}
-    h2{text-align:center!important;margin:0 0 6pt;font-size:13pt;line-height:1.25;} h3{margin:11pt 0 5pt;font-size:12pt;line-height:1.25;} h4{margin:9pt 0 5pt;font-size:12pt;line-height:1.25;}
-    p,div{line-height:1.35;}
+    body{font-family:"Times New Roman",serif;font-size:12pt;color:#111;line-height:1.35;text-align:justify;text-justify:inter-word;}
+    h2{text-align:center!important;margin:0 0 6pt;font-size:13pt;line-height:1.25;}
+    h3,h4{font-size:12pt;line-height:1.25;text-align:left!important;text-justify:none!important;page-break-after:avoid;}
+    h3{margin:11pt 0 5pt;} h4{margin:9pt 0 5pt;}
+    p,div,li{line-height:1.35;}
+    p,li,.export-p{text-align:justify;text-justify:inter-word;}
     .section-body p{margin:0 0 4pt 0;}
     table{width:100%;border-collapse:collapse;margin:6pt 0 10pt;font-family:"Times New Roman",serif;font-size:12pt;table-layout:fixed;line-height:1.25;}
-    th,td{border:1px solid #555;padding:5pt;vertical-align:top;word-wrap:break-word;} th{font-weight:bold;text-align:center!important;background:#eee;}
+    th,td{border:1px solid #555;padding:5pt;vertical-align:top;word-wrap:break-word;text-align:left;} th{font-weight:bold;text-align:center!important;background:#eee;}
     .khbd-table th:nth-child(1),.khbd-table td:nth-child(1){width:46%;}
     .khbd-table th:nth-child(2),.khbd-table td:nth-child(2){width:34%;}
     .khbd-table th:nth-child(3),.khbd-table td:nth-child(3){width:20%;}
@@ -3025,6 +3241,7 @@ function wordCss(){
     .letterhead-table div,.signature-table div{text-align:center!important;}
     .meta-line{text-align:center!important;}
     .lesson-info{text-align:left!important;}
+    .letterhead-table p,.signature-table p,.signature-table div,.meta-line,.lesson-info{text-justify:none!important;}
     .khbd-table td p,.khbd-table div,.khbd-table p{margin:0 0 4pt 0;}
     .signature-table{margin-top:34pt;page-break-inside:avoid;}
     .signature-space{height:86pt;line-height:86pt;}
@@ -3032,8 +3249,9 @@ function wordCss(){
   </style>`;
 }
 function fixedSchoolHeaderHtml(){
+  const teamName = esc(("Tổ " + (subjectName ? subjectName() : "Hóa học")).toUpperCase());
   return `<table class="letterhead-table"><tr>
-    <td><p>SỞ GIÁO DỤC VÀ ĐÀO TẠO</p><p>THÀNH PHỐ HỒ CHÍ MINH</p><p><b>TRƯỜNG THCS VÀ THPT NGUYỄN KHUYẾN</b></p><p><b>TỔ HÓA HỌC</b></p></td>
+    <td><p>SỞ GIÁO DỤC VÀ ĐÀO TẠO</p><p>THÀNH PHỐ HỒ CHÍ MINH</p><p><b>TRƯỜNG THCS VÀ THPT NGUYỄN KHUYẾN</b></p><p><b>${teamName}</b></p></td>
     <td><p><b>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</b></p><p><b><u>Độc lập - Tự do - Hạnh phúc</u></b></p></td>
   </tr></table>`;
 }
@@ -3072,7 +3290,7 @@ function paragraphizeHtml(html){
   if(!html || !/<br/i.test(html)) return html;
   const wrap = document.createElement("div");
   wrap.innerHTML = html;
-  const pStyle = 'margin:0 0 4pt 0;line-height:1.35;text-align:left;text-justify:none;';
+  const pStyle = 'margin:0 0 4pt 0;line-height:1.35;text-align:justify;text-justify:inter-word;';
   function processLeaf(el){
     if(!/<br/i.test(el.innerHTML)) return;
     const lines = [];
@@ -3089,7 +3307,7 @@ function paragraphizeHtml(html){
     el.innerHTML = lines
       .map(s => s.innerHTML.trim())
       .filter(Boolean)
-      .map(inner => `<p align="left" style="${pStyle}">${inner}</p>`)
+      .map(inner => `<p class="export-p" align="justify" style="${pStyle}">${inner}</p>`)
       .join("");
   }
   function processContainer(el){
@@ -3205,3 +3423,7 @@ function flashTop(msg){
 </script>
 </body>
 </html>
+
+
+
+
