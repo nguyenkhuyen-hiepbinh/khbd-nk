@@ -447,6 +447,7 @@
         <option value="bio">Sinh học</option>
         <option value="van">Ngữ văn</option>
         <option value="ls">Lịch sử</option>
+        <option value="toan">Toán</option>
       </select>
     </div>
 
@@ -851,14 +852,15 @@ const NLS_DESCRIPTORS = {
   ]},
 };
 
-let currentSubject = "hoa"; // "hoa" | "vl" | "bio" | "van" | "ls"
+let currentSubject = "hoa"; // "hoa" | "vl" | "bio" | "van" | "ls" | "toan"
 function isLS(){ return currentSubject === "ls"; }
 function isVL(){ return currentSubject === "vl"; }
 function isBIO(){ return currentSubject === "bio"; }
 function isVAN(){ return currentSubject === "van"; }
-function subjectName(){ return isLS() ? "Lịch sử" : (isVL() ? "Vật lí" : (isBIO() ? "Sinh học" : (isVAN() ? "Ngữ văn" : "Hóa học"))); }
-function subjectShort(){ return isLS() ? "lịch sử" : (isVL() ? "vật lí" : (isBIO() ? "sinh học" : (isVAN() ? "ngữ văn" : "hoá học"))); }
-function subjectSlug(){ return isLS() ? "Lich-su" : (isVL() ? "Vat-li" : (isBIO() ? "Sinh-hoc" : (isVAN() ? "Ngu-van" : "Hoa-hoc"))); }
+function isTOAN(){ return currentSubject === "toan"; }
+function subjectName(){ return isLS() ? "Lịch sử" : (isVL() ? "Vật lí" : (isBIO() ? "Sinh học" : (isVAN() ? "Ngữ văn" : (isTOAN() ? "Toán" : "Hóa học")))); }
+function subjectShort(){ return isLS() ? "lịch sử" : (isVL() ? "vật lí" : (isBIO() ? "sinh học" : (isVAN() ? "ngữ văn" : (isTOAN() ? "toán" : "hoá học")))); }
+function subjectSlug(){ return isLS() ? "Lich-su" : (isVL() ? "Vat-li" : (isBIO() ? "Sinh-hoc" : (isVAN() ? "Ngu-van" : (isTOAN() ? "Toan" : "Hoa-hoc")))); }
 
 const DATA = {
   sgk: [
@@ -1889,7 +1891,158 @@ const VAN_DATA = {
     vanTopic("Chuyên đề 12.3", "Tìm hiểu phong cách sáng tác của một trường phái văn học: cổ điển, hiện thực hoặc lãng mạn", ["I","III"], {ycc:"Nhận diện và nghiên cứu được đặc điểm phong cách sáng tác của một trường phái văn học, viết bài giới thiệu và thuyết trình về phong cách ấy qua các tác phẩm cụ thể.", sanpham:"Bài giới thiệu, poster hoặc thuyết trình về một trường phái văn học."})
   ]}
 };
+function toanLesson(chuong, bai, ycc, mien=["I","V"], extra={}){
+  const title = bai.replace(/^Bài\s+\d+\.\s*/i, "");
+  return {
+    chuong,
+    bai,
+    ycc,
+    demuc: extra.demuc || `I. Khởi động vấn đề | II. Hình thành kiến thức trọng tâm về ${title.toLowerCase()} | III. Ví dụ và luyện tập | IV. Vận dụng, mở rộng`,
+    mien,
+    congcu: extra.congcu || "GeoGebra/Desmos, máy tính cầm tay, bảng tính, phiếu học tập số, công cụ vẽ đồ thị hoặc mô phỏng hình học.",
+    hoatdong: extra.hoatdong || `HS khai thác tình huống thực tiễn, biểu diễn dữ liệu/hình vẽ bằng công cụ số, giải quyết bài toán về ${title.toLowerCase()} và trình bày lập luận bằng ngôn ngữ toán học.`,
+    sanpham: extra.sanpham || `Lời giải có lập luận, hình vẽ/đồ thị/bảng tính minh chứng và phần giải thích ý nghĩa kết quả của bài "${title}".`,
+    ...extra
+  };
+}
+function toanTopic(chuong, bai, mien=["I","V"], extra={}){
+  return toanLesson(chuong, bai, extra.ycc || `Thực hiện được các yêu cầu cốt lõi của chuyên đề "${bai}"; vận dụng kiến thức toán học để mô hình hóa, giải quyết vấn đề và trình bày sản phẩm học tập.`, mien, {
+    demuc: extra.demuc || "I. Vấn đề/chủ đề chuyên đề | II. Kiến thức và kĩ năng bổ trợ | III. Thực hành, dự án hoặc bài toán ứng dụng | IV. Báo cáo, đánh giá sản phẩm",
+    congcu: extra.congcu || "GeoGebra/Desmos, bảng tính, máy tính cầm tay, công cụ trình chiếu và kho học liệu số.",
+    hoatdong: extra.hoatdong || `HS thực hiện nhiệm vụ chuyên đề "${bai}", thu thập/xử lí dữ liệu hoặc dựng mô hình, giải quyết bài toán, báo cáo sản phẩm và phản hồi chéo.`,
+    sanpham: extra.sanpham || `Hồ sơ chuyên đề, lời giải/báo cáo dự án và sản phẩm trình bày số của chuyên đề "${bai}".`,
+    ...extra
+  });
+}
+const TOAN_CURRICULUM = {
+  10: {
+    overview: "Lớp 10 củng cố nền tảng đại số, hàm số bậc hai, phương pháp tọa độ, vectơ, hệ thức lượng, thống kê và xác suất; chú trọng mô hình hóa, lập luận, sử dụng công cụ học toán và giải quyết vấn đề thực tiễn.",
+    strands: ["Đại số và một số yếu tố giải tích", "Hình học và đo lường", "Thống kê và xác suất"],
+    topics: ["Chuyên đề 10.1: Phương pháp quy nạp toán học và nhị thức Newton.", "Chuyên đề 10.2: Hệ phương trình bậc nhất ba ẩn và ứng dụng.", "Chuyên đề 10.3: Ba đường conic và ứng dụng."]
+  },
+  11: {
+    overview: "Lớp 11 phát triển tư duy hàm số, lượng giác, dãy số, giới hạn, đạo hàm, hình học không gian, xác suất; tăng cường chứng minh, mô hình hóa và sử dụng công cụ số để khảo sát, trực quan hóa.",
+    strands: ["Hàm số lượng giác, phương trình lượng giác, dãy số, giới hạn, đạo hàm", "Quan hệ song song, vuông góc trong không gian", "Tổ hợp, xác suất và thống kê"],
+    topics: ["Chuyên đề 11.1: Một số yếu tố của lí thuyết đồ thị.", "Chuyên đề 11.2: Phép biến hình phẳng.", "Chuyên đề 11.3: Một số yếu tố vẽ kĩ thuật."]
+  },
+  12: {
+    overview: "Lớp 12 hoàn thiện mạch giải tích và hình học không gian: khảo sát hàm số, nguyên hàm - tích phân, phương pháp tọa độ trong không gian, số phức, thống kê xác suất; gắn học toán với định hướng nghề nghiệp và ứng dụng.",
+    strands: ["Ứng dụng đạo hàm, nguyên hàm - tích phân, số phức", "Phương pháp tọa độ trong không gian", "Thống kê, xác suất và mô hình toán học"],
+    topics: ["Chuyên đề 12.1: Ứng dụng toán học trong tối ưu hóa và mô hình hóa.", "Chuyên đề 12.2: Một số yếu tố xác suất, thống kê nâng cao.", "Chuyên đề 12.3: Ứng dụng hình học tọa độ và công cụ số trong giải quyết vấn đề."]
+  }
+};
+function toanCurriculumText(grade=activeGrade()){
+  const c = TOAN_CURRICULUM[grade] || TOAN_CURRICULUM[10];
+  return `- Định hướng lớp ${grade}: ${c.overview}
+- Mạch nội dung cốt lõi: ${c.strands.join(" | ")}
+- Chuyên đề học tập: ${c.topics.join(" | ")}`;
+}
+const TOAN_DATA = {
+  10: { sgk: [
+    toanLesson("Chương I. Mệnh đề và tập hợp", "Bài 1. Mệnh đề", "Nhận biết được mệnh đề, mệnh đề chứa biến; xác định được tính đúng sai của mệnh đề; sử dụng được các phép toán logic cơ bản trong lập luận toán học.", ["I","V"], {demuc:"Mệnh đề | Mệnh đề phủ định | Mệnh đề kéo theo, tương đương | Điều kiện cần, điều kiện đủ"}),
+    toanLesson("Chương I. Mệnh đề và tập hợp", "Bài 2. Tập hợp và các phép toán trên tập hợp", "Sử dụng được kí hiệu tập hợp, tập con, các phép toán giao, hợp, hiệu, phần bù; biểu diễn được tập hợp và vận dụng trong giải toán.", ["I","III"]),
+    toanLesson("Chương II. Bất phương trình và hệ bất phương trình bậc nhất hai ẩn", "Bài 3. Bất phương trình bậc nhất hai ẩn", "Nhận biết, biểu diễn miền nghiệm của bất phương trình bậc nhất hai ẩn trên mặt phẳng tọa độ; vận dụng trong bài toán tối ưu đơn giản.", ["I","V"]),
+    toanLesson("Chương II. Bất phương trình và hệ bất phương trình bậc nhất hai ẩn", "Bài 4. Hệ bất phương trình bậc nhất hai ẩn", "Biểu diễn được miền nghiệm của hệ bất phương trình bậc nhất hai ẩn; giải quyết được một số bài toán quy hoạch tuyến tính đơn giản.", ["I","V"]),
+    toanLesson("Chương III. Hệ thức lượng trong tam giác", "Bài 5. Giá trị lượng giác của một góc từ 0° đến 180°", "Tính và vận dụng được giá trị lượng giác của góc từ 0° đến 180°; sử dụng máy tính cầm tay và bảng giá trị khi cần.", ["I","V"]),
+    toanLesson("Chương III. Hệ thức lượng trong tam giác", "Bài 6. Hệ thức lượng trong tam giác", "Vận dụng được định lí sin, định lí cosin, công thức diện tích tam giác để giải tam giác và giải quyết bài toán đo đạc thực tế.", ["I","V"]),
+    toanLesson("Chương IV. Vectơ", "Bài 7. Các khái niệm mở đầu", "Nhận biết vectơ, giá, độ dài, hướng, vectơ bằng nhau và vectơ đối; biểu diễn vectơ trong các tình huống hình học.", ["I","III"]),
+    toanLesson("Chương IV. Vectơ", "Bài 8. Tổng và hiệu của hai vectơ", "Thực hiện được phép cộng, trừ vectơ; vận dụng quy tắc hình bình hành, quy tắc ba điểm trong chứng minh và tính toán.", ["I","V"]),
+    toanLesson("Chương IV. Vectơ", "Bài 9. Tích của một vectơ với một số", "Thực hiện được phép nhân vectơ với một số; phân tích vectơ theo hai vectơ không cùng phương và vận dụng giải toán.", ["I","V"]),
+    toanLesson("Chương IV. Vectơ", "Bài 10. Vectơ trong mặt phẳng tọa độ", "Biểu diễn được vectơ bằng tọa độ; tính tọa độ tổng, hiệu, tích với một số và vận dụng trong hình học tọa độ.", ["I","V"]),
+    toanLesson("Chương IV. Vectơ", "Bài 11. Tích vô hướng của hai vectơ", "Tính và vận dụng được tích vô hướng, góc giữa hai vectơ, độ dài vectơ; giải bài toán chứng minh vuông góc, tính khoảng cách.", ["I","V"]),
+    toanLesson("Chương V. Các số đặc trưng của mẫu số liệu không ghép nhóm", "Bài 12. Số gần đúng và sai số", "Nhận biết số gần đúng, sai số tuyệt đối, sai số tương đối; biết làm tròn số và đánh giá độ chính xác của kết quả.", ["I","III"]),
+    toanLesson("Chương V. Các số đặc trưng của mẫu số liệu không ghép nhóm", "Bài 13. Các số đặc trưng đo xu thế trung tâm", "Tính và giải thích được số trung bình, trung vị, tứ phân vị, mốt trong phân tích dữ liệu.", ["I","III"], {congcu:"Google Sheets/Excel, biểu đồ số, máy tính cầm tay."}),
+    toanLesson("Chương V. Các số đặc trưng của mẫu số liệu không ghép nhóm", "Bài 14. Các số đặc trưng đo độ phân tán", "Tính và giải thích được khoảng biến thiên, khoảng tứ phân vị, phương sai, độ lệch chuẩn; so sánh mức độ phân tán của dữ liệu.", ["I","III"], {congcu:"Google Sheets/Excel, biểu đồ số, máy tính cầm tay."}),
+    toanLesson("Chương VI. Hàm số, đồ thị và ứng dụng", "Bài 15. Hàm số", "Nhận biết khái niệm hàm số, tập xác định, đồ thị; đọc, lập bảng giá trị và phân tích sự biến thiên của một số hàm số quen thuộc.", ["I","III"]),
+    toanLesson("Chương VI. Hàm số, đồ thị và ứng dụng", "Bài 16. Hàm số bậc hai", "Mô tả và vẽ được đồ thị hàm số bậc hai; xác định đỉnh, trục đối xứng, khoảng đồng biến/nghịch biến và vận dụng giải bài toán thực tiễn.", ["I","V"]),
+    toanLesson("Chương VI. Hàm số, đồ thị và ứng dụng", "Bài 17. Dấu của tam thức bậc hai", "Xét được dấu của tam thức bậc hai; vận dụng để giải bất phương trình và phân tích điều kiện của bài toán.", ["I","V"]),
+    toanLesson("Chương VI. Hàm số, đồ thị và ứng dụng", "Bài 18. Phương trình quy về phương trình bậc hai", "Giải được một số phương trình quy về phương trình bậc hai; kiểm tra điều kiện và nghiệm trong từng tình huống.", ["I","V"]),
+    toanLesson("Chương VII. Phương pháp tọa độ trong mặt phẳng", "Bài 19. Phương trình đường thẳng", "Viết và sử dụng được phương trình đường thẳng; xét vị trí tương đối, góc, khoảng cách và vận dụng giải bài toán thực tiễn.", ["I","V"]),
+    toanLesson("Chương VII. Phương pháp tọa độ trong mặt phẳng", "Bài 20. Vị trí tương đối giữa hai đường thẳng. Góc và khoảng cách", "Xác định được vị trí tương đối giữa hai đường thẳng; tính góc và khoảng cách trong mặt phẳng tọa độ.", ["I","V"]),
+    toanLesson("Chương VII. Phương pháp tọa độ trong mặt phẳng", "Bài 21. Đường tròn trong mặt phẳng tọa độ", "Viết được phương trình đường tròn; xác định tâm, bán kính, tiếp tuyến và vận dụng giải bài toán hình học tọa độ.", ["I","V"]),
+    toanLesson("Chương VII. Phương pháp tọa độ trong mặt phẳng", "Bài 22. Ba đường conic", "Nhận biết và khai thác các dạng phương trình cơ bản của elip, hypebol, parabol; liên hệ với mô hình thực tiễn.", ["I","V"], {congcu:"GeoGebra, Desmos, công cụ vẽ hình và mô phỏng quỹ đạo."}),
+    toanLesson("Chương VIII. Đại số tổ hợp", "Bài 23. Quy tắc đếm", "Vận dụng được quy tắc cộng và quy tắc nhân để giải bài toán đếm trong các tình huống học tập và thực tiễn.", ["I","V"]),
+    toanLesson("Chương VIII. Đại số tổ hợp", "Bài 24. Hoán vị, chỉnh hợp và tổ hợp", "Nhận biết và tính được hoán vị, chỉnh hợp, tổ hợp; lựa chọn mô hình đếm phù hợp cho từng bài toán.", ["I","V"]),
+    toanLesson("Chương VIII. Đại số tổ hợp", "Bài 25. Nhị thức Newton", "Khai triển được nhị thức Newton và vận dụng hệ số trong bài toán tổ hợp, đại số.", ["I","V"]),
+    toanLesson("Chương IX. Tính xác suất theo định nghĩa cổ điển", "Bài 26. Biến cố và định nghĩa cổ điển của xác suất", "Mô tả được phép thử, không gian mẫu, biến cố; tính xác suất theo định nghĩa cổ điển trong tình huống đơn giản.", ["I","V"]),
+    toanLesson("Chương IX. Tính xác suất theo định nghĩa cổ điển", "Bài 27. Thực hành tính toán xác suất theo định nghĩa cổ điển", "Thực hành xác định không gian mẫu, đếm số kết quả thuận lợi và tính xác suất; kiểm chứng bằng mô phỏng hoặc bảng tính.", ["I","V"], {congcu:"Bảng tính, mô phỏng ngẫu nhiên, máy tính cầm tay."})
+  ], cd: [
+    toanTopic("Hoạt động thực hành trải nghiệm", "Tìm hiểu một số kiến thức về tài chính", ["I","V"], {ycc:"Vận dụng kiến thức toán học để đọc hiểu, tính toán và ra quyết định trong một số tình huống tài chính cá nhân.", sanpham:"Bảng tính/infographic về một tình huống tài chính."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Mạng xã hội: Lợi và hại", ["I","III"], {ycc:"Thu thập, biểu diễn và phân tích dữ liệu liên quan đến sử dụng mạng xã hội; hình thành nhận định dựa trên số liệu.", sanpham:"Báo cáo dữ liệu, biểu đồ và khuyến nghị sử dụng mạng xã hội an toàn."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Một số nội dung cho hoạt động trải nghiệm hình học", ["I","V"], {congcu:"GeoGebra, thước, compa, công cụ đo đạc và mô phỏng hình học."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Ước tính số cá thể trong một quần thể", ["I","V"], {ycc:"Vận dụng xác suất, thống kê và mô hình hóa để ước tính số cá thể trong một quần thể.", sanpham:"Báo cáo mô hình ước tính và nhận xét sai số."})
+  ]},
+  11: { sgk: [
+    toanLesson("Chương I. Hàm số lượng giác và phương trình lượng giác", "Bài 1. Giá trị lượng giác của góc lượng giác", "Nhận biết góc lượng giác, đường tròn lượng giác; xác định giá trị lượng giác và vận dụng các hệ thức lượng giác cơ bản.", ["I","V"]),
+    toanLesson("Chương I. Hàm số lượng giác và phương trình lượng giác", "Bài 2. Công thức lượng giác", "Sử dụng được các công thức lượng giác cơ bản để biến đổi biểu thức, chứng minh đẳng thức và giải toán.", ["I","V"]),
+    toanLesson("Chương I. Hàm số lượng giác và phương trình lượng giác", "Bài 3. Hàm số lượng giác", "Mô tả, vẽ và khai thác được đồ thị các hàm số lượng giác; phân tích tính tuần hoàn, tập xác định, tập giá trị.", ["I","V"]),
+    toanLesson("Chương I. Hàm số lượng giác và phương trình lượng giác", "Bài 4. Phương trình lượng giác cơ bản", "Giải được một số phương trình lượng giác cơ bản và vận dụng trong bài toán thực tiễn hoặc mô hình chu kì.", ["I","V"]),
+    toanLesson("Chương II. Dãy số. Cấp số cộng và cấp số nhân", "Bài 5. Dãy số", "Nhận biết dãy số, cách cho dãy số; tính và phân tích được một số tính chất đơn giản của dãy số.", ["I","III"]),
+    toanLesson("Chương II. Dãy số. Cấp số cộng và cấp số nhân", "Bài 6. Cấp số cộng", "Vận dụng được công thức số hạng tổng quát và tổng n số hạng đầu của cấp số cộng trong bài toán thực tiễn.", ["I","V"]),
+    toanLesson("Chương II. Dãy số. Cấp số cộng và cấp số nhân", "Bài 7. Cấp số nhân", "Vận dụng được công thức số hạng tổng quát và tổng n số hạng đầu của cấp số nhân trong bài toán thực tiễn.", ["I","V"]),
+    toanLesson("Chương III. Các số đặc trưng đo xu thế trung tâm của mẫu số liệu ghép nhóm", "Bài 8. Mẫu số liệu ghép nhóm", "Nhận biết, lập và đọc được bảng mẫu số liệu ghép nhóm; sử dụng dữ liệu ghép nhóm trong phân tích thống kê.", ["I","III"], {congcu:"Google Sheets/Excel, biểu đồ số, máy tính cầm tay."}),
+    toanLesson("Chương III. Các số đặc trưng đo xu thế trung tâm của mẫu số liệu ghép nhóm", "Bài 9. Các số đặc trưng đo xu thế trung tâm", "Tính và giải thích được số trung bình, trung vị, tứ phân vị, mốt của mẫu số liệu ghép nhóm.", ["I","III"], {congcu:"Google Sheets/Excel, biểu đồ số, máy tính cầm tay."}),
+    toanLesson("Chương IV. Quan hệ song song trong không gian", "Bài 10. Đường thẳng và mặt phẳng trong không gian", "Nhận biết các quan hệ thuộc, cắt, song song giữa điểm, đường thẳng, mặt phẳng; biểu diễn và lập luận trong hình học không gian.", ["I","III"]),
+    toanLesson("Chương IV. Quan hệ song song trong không gian", "Bài 11. Hai đường thẳng song song", "Chứng minh và vận dụng được quan hệ song song giữa hai đường thẳng trong không gian.", ["I","V"]),
+    toanLesson("Chương IV. Quan hệ song song trong không gian", "Bài 12. Đường thẳng và mặt phẳng song song", "Nhận biết, chứng minh và vận dụng được quan hệ đường thẳng song song với mặt phẳng.", ["I","V"]),
+    toanLesson("Chương IV. Quan hệ song song trong không gian", "Bài 13. Hai mặt phẳng song song", "Nhận biết, chứng minh và vận dụng được quan hệ hai mặt phẳng song song trong hình học không gian.", ["I","V"]),
+    toanLesson("Chương IV. Quan hệ song song trong không gian", "Bài 14. Phép chiếu song song", "Mô tả và vận dụng được phép chiếu song song trong biểu diễn hình không gian và giải toán.", ["I","V"]),
+    toanLesson("Chương V. Giới hạn. Hàm số liên tục", "Bài 15. Giới hạn của dãy số", "Nhận biết và tính được một số giới hạn cơ bản của dãy số; giải thích ý nghĩa của giới hạn trong mô hình toán học.", ["I","V"]),
+    toanLesson("Chương V. Giới hạn. Hàm số liên tục", "Bài 16. Giới hạn của hàm số", "Tính được một số giới hạn cơ bản của hàm số; vận dụng giới hạn để phân tích xu hướng biến thiên.", ["I","V"]),
+    toanLesson("Chương V. Giới hạn. Hàm số liên tục", "Bài 17. Hàm số liên tục", "Nhận biết hàm số liên tục tại một điểm, trên khoảng; vận dụng tính liên tục để xét nghiệm phương trình và mô hình hóa.", ["I","V"]),
+    toanLesson("Chương VI. Hàm số mũ và hàm số lôgarit", "Bài 18. Lũy thừa với số mũ thực", "Hiểu và vận dụng được lũy thừa với số mũ thực; thực hiện biến đổi biểu thức mũ trong các tình huống phù hợp.", ["I","V"]),
+    toanLesson("Chương VI. Hàm số mũ và hàm số lôgarit", "Bài 19. Lôgarit", "Hiểu khái niệm lôgarit, tính chất và quy tắc tính; vận dụng biến đổi biểu thức lôgarit.", ["I","V"]),
+    toanLesson("Chương VI. Hàm số mũ và hàm số lôgarit", "Bài 20. Hàm số mũ và hàm số lôgarit", "Mô tả, vẽ và khai thác được đồ thị hàm số mũ, hàm số lôgarit; vận dụng trong mô hình tăng trưởng.", ["I","V"]),
+    toanLesson("Chương VI. Hàm số mũ và hàm số lôgarit", "Bài 21. Phương trình, bất phương trình mũ và lôgarit", "Giải được một số phương trình, bất phương trình mũ và lôgarit cơ bản; kiểm tra điều kiện nghiệm.", ["I","V"]),
+    toanLesson("Chương VII. Quan hệ vuông góc trong không gian", "Bài 22. Hai đường thẳng vuông góc", "Nhận biết, chứng minh và vận dụng quan hệ vuông góc giữa hai đường thẳng trong không gian.", ["I","V"]),
+    toanLesson("Chương VII. Quan hệ vuông góc trong không gian", "Bài 23. Đường thẳng vuông góc với mặt phẳng", "Nhận biết, chứng minh và vận dụng được quan hệ vuông góc giữa đường thẳng và mặt phẳng.", ["I","V"]),
+    toanLesson("Chương VII. Quan hệ vuông góc trong không gian", "Bài 24. Phép chiếu vuông góc. Góc giữa đường thẳng và mặt phẳng", "Vận dụng phép chiếu vuông góc để xác định góc giữa đường thẳng và mặt phẳng.", ["I","V"]),
+    toanLesson("Chương VII. Quan hệ vuông góc trong không gian", "Bài 25. Hai mặt phẳng vuông góc", "Nhận biết, chứng minh và vận dụng quan hệ hai mặt phẳng vuông góc.", ["I","V"]),
+    toanLesson("Chương VII. Quan hệ vuông góc trong không gian", "Bài 26. Khoảng cách", "Tính được khoảng cách từ điểm đến mặt phẳng, giữa đường thẳng và mặt phẳng song song, giữa hai đường thẳng chéo nhau trong tình huống cơ bản.", ["I","V"]),
+    toanLesson("Chương VII. Quan hệ vuông góc trong không gian", "Bài 27. Thể tích", "Tính và vận dụng được thể tích khối đa diện cơ bản; liên hệ với mô hình hình học thực tiễn.", ["I","V"]),
+    toanLesson("Chương VIII. Các quy tắc tính xác suất", "Bài 28. Biến cố hợp, biến cố giao, biến cố độc lập", "Nhận biết và mô tả được biến cố hợp, giao, độc lập; vận dụng trong phân tích tình huống ngẫu nhiên.", ["I","V"]),
+    toanLesson("Chương VIII. Các quy tắc tính xác suất", "Bài 29. Công thức cộng xác suất", "Vận dụng được công thức cộng xác suất để giải bài toán xác suất trong các tình huống phù hợp.", ["I","V"]),
+    toanLesson("Chương VIII. Các quy tắc tính xác suất", "Bài 30. Công thức nhân xác suất cho hai biến cố độc lập", "Vận dụng được công thức nhân xác suất cho hai biến cố độc lập; kiểm chứng bằng mô phỏng/bảng tính.", ["I","V"], {congcu:"Bảng tính, mô phỏng ngẫu nhiên, máy tính cầm tay."}),
+    toanLesson("Chương IX. Đạo hàm", "Bài 31. Định nghĩa và ý nghĩa của đạo hàm", "Nêu được khái niệm đạo hàm, ý nghĩa hình học và vật lí; tính được đạo hàm bằng định nghĩa trong tình huống đơn giản.", ["I","V"]),
+    toanLesson("Chương IX. Đạo hàm", "Bài 32. Các quy tắc tính đạo hàm", "Sử dụng được các quy tắc tính đạo hàm của tổng, hiệu, tích, thương và hàm hợp đơn giản; vận dụng giải bài toán liên quan.", ["I","V"]),
+    toanLesson("Chương IX. Đạo hàm", "Bài 33. Đạo hàm cấp hai", "Tính được đạo hàm cấp hai trong tình huống cơ bản; hiểu ý nghĩa và vận dụng trong khảo sát sự biến thiên.", ["I","V"])
+  ], cd: [
+    toanTopic("Hoạt động thực hành trải nghiệm", "Một vài áp dụng của Toán học trong tài chính", ["I","V"], {ycc:"Vận dụng dãy số, hàm số mũ, lôgarit hoặc xác suất để giải quyết tình huống tài chính.", sanpham:"Bảng tính, báo cáo hoặc poster về bài toán tài chính."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Lực căng mặt ngoài của nước", ["I","V"], {ycc:"Mô hình hóa và phân tích một tình huống thực nghiệm bằng công cụ toán học phù hợp.", sanpham:"Báo cáo thực nghiệm và phần giải thích bằng mô hình toán."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Một vài mô hình toán học sử dụng hàm số mũ và hàm số lôgarit", ["I","V"], {congcu:"GeoGebra/Desmos, bảng tính, công cụ vẽ đồ thị."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Hoạt động thực hành trải nghiệm Hình học", ["I","V"], {congcu:"GeoGebra 3D, mô hình hình học không gian, công cụ trình chiếu."})
+  ]},
+  12: { sgk: [
+    toanLesson("Chương I. Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số", "Bài 1. Tính đơn điệu và cực trị của hàm số", "Sử dụng được đạo hàm để xét tính đơn điệu, cực trị của hàm số và vận dụng giải bài toán tối ưu đơn giản.", ["I","V"]),
+    toanLesson("Chương I. Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số", "Bài 2. Giá trị lớn nhất và giá trị nhỏ nhất của hàm số", "Tìm được giá trị lớn nhất, nhỏ nhất của hàm số trên khoảng/đoạn; vận dụng mô hình hóa bài toán thực tiễn.", ["I","V"]),
+    toanLesson("Chương I. Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số", "Bài 3. Đường tiệm cận của đồ thị hàm số", "Xác định được tiệm cận đứng, tiệm cận ngang hoặc tiệm cận xiên trong các trường hợp phù hợp; giải thích ý nghĩa trên đồ thị.", ["I","V"]),
+    toanLesson("Chương I. Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số", "Bài 4. Khảo sát sự biến thiên và vẽ đồ thị của hàm số", "Khảo sát sự biến thiên, vẽ và phân tích được đồ thị một số hàm số; sử dụng công cụ số để kiểm chứng.", ["I","V"]),
+    toanLesson("Chương I. Ứng dụng đạo hàm để khảo sát và vẽ đồ thị hàm số", "Bài 5. Ứng dụng đạo hàm để giải quyết một số vấn đề liên quan đến thực tiễn", "Vận dụng đạo hàm trong bài toán tối ưu, tốc độ biến thiên và các tình huống thực tiễn có mô hình hàm số.", ["I","V"]),
+    toanLesson("Chương II. Vectơ và hệ trục tọa độ trong không gian", "Bài 6. Vectơ trong không gian", "Biểu diễn và thực hiện được các phép toán vectơ trong không gian; vận dụng trong chứng minh và tính toán hình học.", ["I","V"]),
+    toanLesson("Chương II. Vectơ và hệ trục tọa độ trong không gian", "Bài 7. Hệ trục tọa độ trong không gian", "Biểu diễn được điểm, vectơ trong hệ tọa độ không gian; tính tọa độ, độ dài, tích vô hướng và vận dụng giải bài toán hình học.", ["I","V"]),
+    toanLesson("Chương II. Vectơ và hệ trục tọa độ trong không gian", "Bài 8. Biểu thức tọa độ của các phép toán vectơ", "Sử dụng biểu thức tọa độ của các phép toán vectơ để giải bài toán vị trí, góc, khoảng cách trong không gian.", ["I","V"]),
+    toanLesson("Chương III. Các số đặc trưng đo mức độ phân tán của mẫu số liệu ghép nhóm", "Bài 9. Khoảng biến thiên và khoảng tứ phân vị", "Tính và giải thích được khoảng biến thiên, khoảng tứ phân vị của mẫu số liệu ghép nhóm; so sánh mức độ phân tán.", ["I","III"], {congcu:"Google Sheets/Excel, biểu đồ số, máy tính cầm tay."}),
+    toanLesson("Chương III. Các số đặc trưng đo mức độ phân tán của mẫu số liệu ghép nhóm", "Bài 10. Phương sai và độ lệch chuẩn", "Tính và giải thích được phương sai, độ lệch chuẩn của mẫu số liệu ghép nhóm; phân tích độ ổn định của dữ liệu.", ["I","III"], {congcu:"Google Sheets/Excel, biểu đồ số, máy tính cầm tay."}),
+    toanLesson("Chương IV. Nguyên hàm và tích phân", "Bài 11. Nguyên hàm", "Tính được nguyên hàm của một số hàm số cơ bản; vận dụng các tính chất và phương pháp tính nguyên hàm đơn giản.", ["I","V"]),
+    toanLesson("Chương IV. Nguyên hàm và tích phân", "Bài 12. Tích phân", "Tính được tích phân xác định của một số hàm số; hiểu và vận dụng ý nghĩa hình học của tích phân.", ["I","V"]),
+    toanLesson("Chương IV. Nguyên hàm và tích phân", "Bài 13. Ứng dụng hình học của tích phân", "Vận dụng tích phân để tính diện tích hình phẳng, thể tích vật thể đơn giản và giải quyết bài toán thực tiễn.", ["I","V"]),
+    toanLesson("Chương V. Phương pháp tọa độ trong không gian", "Bài 14. Phương trình mặt phẳng", "Viết và sử dụng được phương trình mặt phẳng; xét vị trí tương đối, khoảng cách và góc trong không gian.", ["I","V"]),
+    toanLesson("Chương V. Phương pháp tọa độ trong không gian", "Bài 15. Phương trình đường thẳng trong không gian", "Viết và khai thác được phương trình đường thẳng trong không gian; giải bài toán vị trí tương đối, góc và khoảng cách.", ["I","V"]),
+    toanLesson("Chương V. Phương pháp tọa độ trong không gian", "Bài 16. Công thức tính góc trong không gian", "Sử dụng được công thức tính góc giữa hai đường thẳng, giữa đường thẳng và mặt phẳng, giữa hai mặt phẳng trong hệ tọa độ.", ["I","V"]),
+    toanLesson("Chương V. Phương pháp tọa độ trong không gian", "Bài 17. Phương trình mặt cầu", "Viết được phương trình mặt cầu; xác định tâm, bán kính và vận dụng trong bài toán hình học không gian.", ["I","V"]),
+    toanLesson("Chương VI. Xác suất có điều kiện", "Bài 18. Xác suất có điều kiện", "Tính và giải thích được xác suất có điều kiện; biểu diễn tình huống bằng sơ đồ cây hoặc bảng xác suất.", ["I","V"]),
+    toanLesson("Chương VI. Xác suất có điều kiện", "Bài 19. Công thức xác suất toàn phần và công thức Bayes", "Vận dụng được công thức xác suất toàn phần và công thức Bayes để giải quyết một số bài toán ra quyết định trong thực tiễn.", ["I","V"], {congcu:"Bảng tính, sơ đồ cây, mô phỏng xác suất, máy tính cầm tay."})
+  ], cd: [
+    toanTopic("Hoạt động thực hành trải nghiệm", "Khảo sát và vẽ đồ thị hàm số với phần mềm GeoGebra", ["I","V"], {congcu:"GeoGebra, Desmos, máy chiếu hoặc màn hình tương tác."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Vẽ vectơ tổng của ba vectơ trong không gian bằng phần mềm GeoGebra", ["I","V"], {congcu:"GeoGebra 3D, mô hình tọa độ không gian."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Độ dài gang tay", ["I","III"], {ycc:"Thu thập và xử lí dữ liệu thực tế về độ dài gang tay; phân tích đặc trưng thống kê và sai số.", sanpham:"Bảng dữ liệu, biểu đồ và nhận xét thống kê."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Tính nguyên hàm và tích phân với phần mềm GeoGebra", ["I","V"], {congcu:"GeoGebra, bảng tính, công cụ vẽ đồ thị."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Tính gần đúng tích phân bằng phương pháp hình thang", ["I","V"], {ycc:"Vận dụng phương pháp hình thang để xấp xỉ tích phân và đánh giá sai số trong tình huống tính toán.", sanpham:"Bảng tính xấp xỉ, đồ thị minh họa và nhận xét kết quả."}),
+    toanTopic("Hoạt động thực hành trải nghiệm", "Vẽ đồ họa 3D với phần mềm GeoGebra", ["I","V"], {congcu:"GeoGebra 3D, công cụ trình chiếu, mô hình hình học không gian."})
+  ]}
+};
 function subjectCurriculumContext(){
+  if(isTOAN()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN TOÁN\n${toanCurriculumText(activeGrade())}\n`;
   if(isVAN()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN NGỮ VĂN\n${vanCurriculumText(activeGrade())}\n`;
   if(isVL()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN VẬT LÍ\n${vlCurriculumText(activeGrade())}\n`;
   if(isBIO()) return `\nĐỊNH HƯỚNG CHƯƠNG TRÌNH TỔNG THỂ MÔN SINH HỌC\n${bioCurriculumText(activeGrade())}\n`;
@@ -1902,6 +2055,7 @@ function activeData(){
   if(isVL()) return VL_DATA[g] || VL_DATA[10];
   if(isBIO()) return BIO_DATA[g] || BIO_DATA[10];
   if(isVAN()) return VAN_DATA[g] || VAN_DATA[10];
+  if(isTOAN()) return TOAN_DATA[g] || TOAN_DATA[10];
   return ({"10": DATA, "11": DATA11, "12": DATA12})[g];
 }
 function activeGrade(){ return $("selGrade")?.value || "10"; }
@@ -2092,11 +2246,13 @@ function createLegacyDeptPlan(){
     return `- ${chapter}\\n${lessonRows}`;
   }).join("\\n");
   const monTen = subjectName();
-  const nangLucDacThuTen = isLS() ? "năng lực lịch sử" : (isVL() ? "năng lực vật lí" : (isBIO() ? "năng lực sinh học" : (isVAN() ? "năng lực ngữ văn" : "năng lực hóa học")));
+  const nangLucDacThuTen = isLS() ? "năng lực lịch sử" : (isVL() ? "năng lực vật lí" : (isBIO() ? "năng lực sinh học" : (isVAN() ? "năng lực ngữ văn" : (isTOAN() ? "năng lực toán học" : "năng lực hóa học"))));
   const dinhHuongToChuc = isLS()
     ? "- Tăng cường khai thác tư liệu, sử liệu, bản đồ/lược đồ, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác, khách quan của sử liệu, bản quyền học liệu và an toàn khi tổ chức hoạt động trải nghiệm/thực hành lịch sử."
     : isVAN()
       ? "- Tăng cường đọc hiểu văn bản, thảo luận, viết ngắn, nói và nghe; tổ chức hoạt động theo tiến trình khám phá văn bản, thực hành tiếng Việt và tạo lập văn bản phù hợp đặc trưng bài học.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt, nhất là tìm kiếm tư liệu, trình bày cảm nhận, thuyết trình hoặc tạo sản phẩm đọc - viết - nói - nghe.\\n- Giáo viên rà soát độ phù hợp ngữ liệu, tính chính xác của thông tin, bản quyền học liệu và định hướng thẩm mĩ, nhân văn khi tổ chức dạy học Ngữ văn."
+      : isTOAN()
+        ? "- Tăng cường hoạt động phát hiện vấn đề, lập luận, mô hình hóa, luyện tập và vận dụng; sử dụng hình vẽ, đồ thị, bảng số liệu và công cụ học toán khi phù hợp.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt, nhất là dựng hình, vẽ đồ thị, xử lí dữ liệu, mô phỏng và trình bày lời giải.\\n- Giáo viên rà soát tính chính xác toán học, cách sử dụng kí hiệu, mức độ lập luận và sự phù hợp của công cụ số với từng bài học."
       : "- Tăng cường thí nghiệm, mô phỏng, học liệu trực quan và hoạt động hợp tác; có phương án thay thế khi thiết bị hoặc Internet hạn chế.\\n- Mỗi bài có minh chứng đánh giá quá trình; sản phẩm số chỉ sử dụng khi phục vụ trực tiếp yêu cầu cần đạt.\\n- Giáo viên rà soát tính chính xác khoa học, bản quyền học liệu và an toàn khi tổ chức thực hành/thí nghiệm.";
   const plan = `KẾ HOẠCH GIÁO DỤC MÔN ${monTen.toUpperCase()} ${activeGrade()}\\n${deptName}\\n${schoolYear}\\n\\n1. Mục tiêu chung\\n- Thực hiện Chương trình GDPT 2018 môn ${monTen} ${activeGrade()}; bảo đảm yêu cầu cần đạt, phát triển ${nangLucDacThuTen}, năng lực chung và phẩm chất học sinh.\\n- Tích hợp năng lực số ở mức Nâng cao 1 phù hợp từng bài học; ưu tiên nhiệm vụ tìm kiếm, kiểm chứng, tạo sản phẩm số và sử dụng công cụ số an toàn, có trách nhiệm.\\n- Thống nhất sử dụng kế hoạch bài dạy theo Công văn 5512; giáo viên được điều chỉnh tình huống, phương pháp, câu hỏi, sản phẩm và mức độ phân hóa theo lớp phụ trách.\\n\\n2. Định hướng tổ chức dạy học\\n${dinhHuongToChuc}\\n\\n3. Phân phối nội dung đề xuất\\n${distribution}\\n\\n4. Kiểm tra, đánh giá\\n- Đánh giá thường xuyên bằng quan sát, hỏi đáp, phiếu học tập, sản phẩm học tập và tự/đánh giá đồng đẳng.\\n- Đánh giá định kì thực hiện theo kế hoạch nhà trường; ma trận và đặc tả được tổ thống nhất trước khi triển khai.\\n\\n5. Thống nhất chuyên môn\\n- Dùng các mã chỉ báo NLS x.y.NC1a/b đúng với nhiệm vụ số của bài; không gắn mã hình thức.\\n- Họp tổ rà soát tiến độ, học liệu, thiết bị và điều chỉnh kế hoạch khi có thay đổi thực tế.\\n\\nGhi chú: Đây là bản khung do ứng dụng tạo. Tổ chuyên môn bổ sung tuần dạy, số tiết thực tế, chuyên đề, kế hoạch kiểm tra và các yêu cầu riêng của nhà trường trước khi ban hành.`;
   $("txtDeptPlan").value = plan;
@@ -2168,10 +2324,11 @@ function createDeptPlan(){
   const vlDeptNote = isVL() ? `<br>5. Định hướng chương trình tổng thể: ${esc(VL_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((VL_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
   const bioDeptNote = isBIO() ? `<br>5. Định hướng chương trình tổng thể: ${esc(BIO_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((BIO_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
   const vanDeptNote = isVAN() ? `<br>5. Định hướng chương trình tổng thể: ${esc(VAN_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((VAN_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
+  const toanDeptNote = isTOAN() ? `<br>5. Định hướng chương trình tổng thể: ${esc(TOAN_CURRICULUM[grade]?.overview || "")}<br>6. Chuyên đề học tập: ${esc((TOAN_CURRICULUM[grade]?.topics || []).join("; "))}` : "";
   if($("deptSituation")) $("deptSituation").innerHTML = `1. Số lớp: .... ; Số học sinh: ....
 2. Tình hình đội ngũ: Số giáo viên: .... ; Trình độ đào tạo: ........................................
 3. Thiết bị dạy học: Thống kê thiết bị có thể sử dụng để tổ chức dạy học môn ${subjectName()}.
-4. Phòng học bộ môn/phòng thí nghiệm/phòng đa năng: Thống kê các phòng, không gian có thể sử dụng.${vlDeptNote}${bioDeptNote}${vanDeptNote}`;
+4. Phòng học bộ môn/phòng thí nghiệm/phòng đa năng: Thống kê các phòng, không gian có thể sử dụng.${vlDeptNote}${bioDeptNote}${vanDeptNote}${toanDeptNote}`;
   $("deptTitle").innerHTML = `HOẠT ĐỘNG GIÁO DỤC ${subjectName().toUpperCase()} KHỐI LỚP ${grade}<br>(Năm học 2026 - 2027)`;
   const lessons = activeData().sgk || [];
   const deptDeviceRows = isLS() ? [
@@ -2190,6 +2347,10 @@ function createDeptPlan(){
     [1,"SGK, SGV, phiếu học tập đọc hiểu - viết - nói nghe, ngữ liệu bổ trợ", "....", "Các bài đọc hiểu văn bản, thực hành tiếng Việt, viết, nói và nghe", "Bổ sung theo điều kiện thực tế"],
     [2,"Máy chiếu, máy tính, loa, học liệu số, video/âm thanh, kho tư liệu văn học - ngôn ngữ", "....", "Các bài cần nghe ngữ liệu, trình chiếu văn bản, thuyết trình hoặc khai thác học liệu số", ""],
     [3,"Bảng tiêu chí đánh giá bài viết/bài nói, hồ sơ học tập, sản phẩm đọc sáng tạo", "....", "Hoạt động luyện viết, thảo luận, sân khấu hóa, dự án đọc và chuyên đề", ""]
+  ] : isTOAN() ? [
+    [1,"SGK, SGV, phiếu học tập, bảng phụ, thước thẳng, compa, êke, thước đo góc", "....", "Các bài đại số, giải tích, hình học, thống kê và xác suất", "Bổ sung theo điều kiện thực tế"],
+    [2,"Máy tính cầm tay, máy chiếu, máy tính, GeoGebra/Desmos, bảng tính, học liệu số", "....", "Các bài cần vẽ đồ thị, dựng hình, mô phỏng, xử lí dữ liệu hoặc kiểm chứng kết quả", ""],
+    [3,"Mô hình hình học phẳng/không gian, bộ dụng cụ thực hành, dữ liệu thực tế", "....", "Hoạt động mô hình hóa, thực hành, trải nghiệm, chuyên đề và STEM Toán", ""]
   ] : [
     [1,"Bộ dụng cụ thí nghiệm và hóa chất theo danh mục nhà trường", "....", "Các bài có thí nghiệm/thực hành", "Bổ sung theo điều kiện thực tế"],
     [2,"Máy chiếu, máy tính, học liệu số, mô phỏng", "....", "Các bài cần trực quan hóa hoặc khai thác học liệu số", ""],
@@ -2212,6 +2373,10 @@ function createDeptPlan(){
     [1,"Phòng học có máy chiếu, âm thanh hoặc phòng đa năng", "....", "Dạy đọc hiểu, trình chiếu ngữ liệu, nghe - nói, thuyết trình và hoạt động sân khấu hóa", ""],
     [2,"Thư viện/phòng đọc/góc học liệu", "....", "Khai thác văn bản, tài liệu tham khảo, dự án đọc mở rộng và giới thiệu sách", ""],
     [3,"Không gian câu lạc bộ, sân khấu nhỏ hoặc khu trải nghiệm", "....", "Tổ chức nói nghe, diễn đọc, đóng vai, tọa đàm văn học và chuyên đề", ""]
+  ] : isTOAN() ? [
+    [1,"Phòng học có máy chiếu hoặc phòng máy", "....", "Vẽ đồ thị, dựng hình, xử lí dữ liệu, kiểm tra trực tuyến và trình bày sản phẩm", ""],
+    [2,"Phòng học bộ môn Toán/phòng STEM", "....", "Tổ chức thực hành mô hình hóa, hoạt động trải nghiệm, chuyên đề và câu lạc bộ Toán", ""],
+    [3,"Không gian trải nghiệm trong trường hoặc địa phương", "....", "Bài toán đo đạc, khảo sát dữ liệu, tối ưu hóa và vận dụng thực tiễn", ""]
   ] : [
     [1,"Phòng thực hành bộ môn Hóa học", "....", "Dạy các bài thực hành/thí nghiệm", ""],
     [2,"Phòng học có máy chiếu hoặc phòng máy", "....", "Khai thác học liệu số, mô phỏng, kiểm tra trực tuyến", ""],
@@ -2366,7 +2531,7 @@ function buildPaperSkeleton(){
    ====================================================================== */
 const TABLE_OUTPUT_RULE = ` QUY ĐỊNH ĐỊNH DẠNG TRẢ LỜI (BẮT BUỘC): chỉ trả về DUY NHẤT mã HTML, bắt đầu ngay từ ký tự đầu tiên bằng <table class="khbd-table">, không thêm chữ giải thích, lời dẫn hay markdown nào trước hoặc sau bảng. Cấu trúc đúng như sau: <table class="khbd-table"><thead><tr><th>Hoạt động của GV và HS</th><th>Sản phẩm dự kiến</th><th>Năng lực số (NLS)</th></tr></thead><tbody><tr><td>...</td><td>...</td><td>...</td></tr></tbody></table>. BẮT BUỘC điền đầy đủ nội dung cho CẢ 3 CỘT của MỌI dòng — tuyệt đối không để cột Sản phẩm dự kiến hoặc Năng lực số (NLS) trống hoặc bỏ dở; viết ngắn gọn, súc tích để đảm bảo hoàn chỉnh hết bảng (kết thúc bằng đúng thẻ </table>) trong giới hạn độ dài cho phép. Trong nội dung mỗi <td>, nếu có nhiều dòng/bước thì nối các dòng bằng thẻ <br> (không dùng \\n, không dùng <li>/<ul>). Cột Năng lực số (NLS) ghi mỗi mã trong một thẻ <span class="nls-badge">mã</span>, nhiều mã nối nhau bằng <br>.`;
 function getSections(){
-  const nangLucDacThu = isLS() ? "Năng lực lịch sử" : (isVL() ? "Năng lực vật lí" : (isBIO() ? "Năng lực sinh học" : (isVAN() ? "Năng lực ngữ văn" : "Năng lực hoá học")));
+  const nangLucDacThu = isLS() ? "Năng lực lịch sử" : (isVL() ? "Năng lực vật lí" : (isBIO() ? "Năng lực sinh học" : (isVAN() ? "Năng lực ngữ văn" : (isTOAN() ? "Năng lực toán học" : "Năng lực hoá học"))));
   return [
   { key:"mucTieu", label:"Mục tiêu",
     ask:`Soạn phần "I. MỤC TIÊU" của KHBD. Trình bày theo 4 mục: 1. Kiến thức; 2. Năng lực, gồm 2.1. Năng lực chung, 2.2. ${nangLucDacThu}, 2.3. Năng lực số; 3. Phẩm chất. Ở mục 2.3 phải nêu rõ mã chỉ báo NLS dạng x.y.NC1a/b và biểu hiện cụ thể gắn với bài học, không chỉ nêu tên miền. Dùng dấu "- " đầu dòng, không dùng markdown (không **, không #). CHỈ trả về văn bản thuần (không dùng thẻ HTML).` },
@@ -2392,7 +2557,9 @@ function buildSystemPrompt(){
         ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Sinh học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ sinh học phổ thông; chú trọng quan sát, thực hành, phân tích dữ liệu sinh học, mối liên hệ cấu trúc - chức năng, cơ chế - quá trình, bảo đảm an toàn sinh học và đạo đức sinh học.`
         : isVAN()
           ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Ngữ văn THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ ngữ văn; bám đặc trưng thể loại, yêu cầu đọc, viết, nói và nghe, thực hành tiếng Việt, định hướng phát triển năng lực cảm thụ, phân tích, tạo lập văn bản và giao tiếp thẩm mĩ.`
-        : `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Hoá học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ hoá học phổ thông.`;
+          : isTOAN()
+            ? `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Toán THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ toán học phổ thông; chú trọng tư duy và lập luận toán học, mô hình hóa toán học, giải quyết vấn đề, giao tiếp toán học, sử dụng công cụ/phương tiện học toán, trình bày kí hiệu chính xác và kiểm chứng kết quả.`
+            : `Bạn là chuyên gia biên soạn Kế hoạch bài dạy (giáo án) môn Hoá học THPT tại Việt Nam, theo cấu trúc Công văn 5512/BGDĐT-GDTrH và Chương trình GDPT 2018. Viết bằng tiếng Việt, văn phong giáo án, súc tích, đúng thuật ngữ hoá học phổ thông.`;
   return `${subjectClause} Không dùng markdown (không in đậm **, không tiêu đề #). Học sinh lớp ${activeGrade()} tương ứng mức "Nâng cao 1" trong Khung năng lực số (Thông tư 02/2025/TT-BGDĐT, cụ thể hoá tại Phụ lục kèm Công văn 3456/BGDĐT-GDPT): các em xử lý nhiệm vụ/vấn đề đa dạng, có thể tự chủ và hướng dẫn người khác. Khi tích hợp năng lực số, chỉ tích hợp tự nhiên, lồng ghép vào đúng "địa chỉ" của bài học (không thêm hoạt động lan man ngoài nội dung), và phải bám sát các yêu cầu cần đạt (chỉ báo) của từng năng lực thành phần được cung cấp trong ngữ cảnh — không chỉ nêu tên miền chung. Luôn tuân thủ ĐÚNG định dạng đầu ra được yêu cầu trong từng câu hỏi cụ thể (văn bản thuần hoặc mã HTML <table>) và luôn viết đầy đủ, hoàn chỉnh hết bảng/nội dung được yêu cầu — đây là yêu cầu kỹ thuật bắt buộc để hệ thống hiển thị đúng, không được thêm, bớt định dạng hoặc bỏ dở giữa bảng.`;
 }
 
@@ -2684,11 +2851,48 @@ function sgvGuideForLesson_VAN(lesson=currentLesson){
   return guide;
 }
 
+function sgvGuideForLesson_TOAN(lesson=currentLesson){
+  const text = `${lesson?.chuong || ""} ${lesson?.bai || ""} ${lesson?.demuc || ""}`.toLowerCase();
+  const grade = activeGrade();
+  const isFunction = /hàm số|đồ thị|đạo hàm|nguyên hàm|tích phân|giới hạn|liên tục/.test(text);
+  const isGeometry = /hình|vectơ|tọa độ|đường thẳng|mặt phẳng|mặt cầu|không gian|conic|phép biến hình/.test(text);
+  const isStats = /thống kê|xác suất|số liệu|biến cố|tổ hợp|hoán vị|chỉnh hợp/.test(text);
+  const isAlgebra = /mệnh đề|tập hợp|bất phương trình|phương trình|dãy số|cấp số|số phức/.test(text);
+  const guide = {
+    source: `Chương trình GDPT 2018 môn Toán và SGK/SGV Toán ${grade} - dùng như định hướng thiết kế hoạt động lập luận, mô hình hóa, luyện tập và vận dụng.`,
+    focus: `${(TOAN_CURRICULUM[grade] || TOAN_CURRICULUM[10]).overview} Tổ chức hoạt động theo mạch: nêu vấn đề - hình thành khái niệm/quy tắc - phân tích ví dụ - luyện tập lập luận - vận dụng mô hình hóa và kiểm chứng bằng công cụ học toán.`,
+    methods: ["nêu vấn đề - khám phá", "hoạt động cá nhân/nhóm nhỏ", "trình bày và phản biện lời giải", "sử dụng công cụ số để trực quan hóa hoặc kiểm chứng"],
+    devices: ["SGK/SGV Toán " + grade, "phiếu học tập", "máy tính cầm tay", "máy chiếu hoặc màn hình trình chiếu", "GeoGebra/Desmos/bảng tính phù hợp"],
+    assessment: ["lời giải có lập luận rõ ràng", "hình vẽ/đồ thị/bảng dữ liệu minh chứng", "bài trình bày hoặc sản phẩm mô hình hóa"]
+  };
+  if(isFunction){
+    guide.devices.push("phần mềm vẽ đồ thị, bảng biến thiên, dữ liệu tình huống tối ưu hóa");
+    guide.methods.push("khảo sát đồ thị", "đọc - giải thích bảng biến thiên/đồ thị", "kiểm chứng kết quả bằng công cụ số");
+    guide.assessment.push("đồ thị/bảng biến thiên kèm nhận xét", "lời giải bài toán tối ưu hoặc mô hình hàm số");
+  }
+  if(isGeometry){
+    guide.devices.push("mô hình hình học, dụng cụ vẽ hình, GeoGebra 2D/3D");
+    guide.methods.push("dựng hình - quan sát - suy luận", "chứng minh theo sơ đồ", "mô hình hóa quan hệ hình học");
+    guide.assessment.push("hình vẽ đúng kí hiệu", "bài chứng minh hoặc lời giải hình học có giải thích");
+  }
+  if(isStats){
+    guide.devices.push("bảng số liệu, Google Sheets/Excel, công cụ mô phỏng xác suất");
+    guide.methods.push("thu thập và xử lí dữ liệu", "mô phỏng xác suất", "diễn giải ý nghĩa số liệu trong bối cảnh");
+    guide.assessment.push("bảng tính/biểu đồ", "kết luận thống kê hoặc xác suất có giải thích");
+  }
+  if(isAlgebra){
+    guide.methods.push("phân tích điều kiện", "biến đổi đại số có kiểm tra", "đối chiếu nhiều cách giải");
+    guide.assessment.push("lời giải đại số đúng quy trình", "bảng so sánh cách giải hoặc điều kiện nghiệm");
+  }
+  return guide;
+}
+
 function sgvGuideForLesson(lesson=currentLesson){
   if(isLS()) return sgvGuideForLesson_LS(lesson);
   if(isVL()) return sgvGuideForLesson_VL(lesson);
   if(isBIO()) return sgvGuideForLesson_BIO(lesson);
   if(isVAN()) return sgvGuideForLesson_VAN(lesson);
+  if(isTOAN()) return sgvGuideForLesson_TOAN(lesson);
   return sgvGuideForLesson_HOA(lesson);
 }
 
@@ -2798,9 +3002,9 @@ Thực hiện nhiệm vụ: HS suy nghĩ cá nhân, trao đổi nhanh theo cặp
 Báo cáo, thảo luận: Đại diện HS nêu dự đoán, căn cứ và câu hỏi còn băn khoăn.
 Kết luận, nhận định: GV nhận xét, chốt vấn đề học tập và dẫn dắt vào bài.`;
   const hd2Gv = `Giao nhiệm vụ học tập: GV chia nhiệm vụ theo các đề mục SGK, tổ chức ${variant.grouping} và sử dụng kĩ thuật ${variant.technique}, phát phiếu học tập và hướng dẫn nguồn học liệu/công cụ số phù hợp.
-Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, ${isLS() ? "khai thác tư liệu, sử liệu, bản đồ/lược đồ" : (isVL() ? "quan sát hiện tượng, thí nghiệm/mô phỏng, đo đạc, phân tích số liệu và đồ thị" : (isBIO() ? "quan sát mẫu vật/hình ảnh, phân tích sơ đồ, dữ liệu sinh học hoặc mô phỏng quá trình sống" : (isVAN() ? "đọc hiểu văn bản/ngữ liệu, phân tích chi tiết nghệ thuật, lập dàn ý, viết ngắn, nói và nghe theo yêu cầu của bài" : "phân tích dữ liệu, quan sát thí nghiệm/mô phỏng")))} hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
+Thực hiện nhiệm vụ: HS làm việc cá nhân/nhóm, đọc SGK, ${isLS() ? "khai thác tư liệu, sử liệu, bản đồ/lược đồ" : (isVL() ? "quan sát hiện tượng, thí nghiệm/mô phỏng, đo đạc, phân tích số liệu và đồ thị" : (isBIO() ? "quan sát mẫu vật/hình ảnh, phân tích sơ đồ, dữ liệu sinh học hoặc mô phỏng quá trình sống" : (isVAN() ? "đọc hiểu văn bản/ngữ liệu, phân tích chi tiết nghệ thuật, lập dàn ý, viết ngắn, nói và nghe theo yêu cầu của bài" : (isTOAN() ? "phân tích bài toán, lập luận, tính toán, dựng hình/vẽ đồ thị, xử lí dữ liệu hoặc mô hình hóa bằng công cụ học toán" : "phân tích dữ liệu, quan sát thí nghiệm/mô phỏng"))))} hoặc khai thác nguồn số theo yêu cầu; ưu tiên ${sgv.methods.join(", ")}.
 Báo cáo, thảo luận: Các nhóm trình bày kết quả; nhóm khác nhận xét, bổ sung, đặt câu hỏi và kiểm chứng thông tin.
-Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh ${isLS() ? "sự kiện/niên đại/khái niệm" : (isVL() ? "khái niệm, định luật, mô hình, công thức và đơn vị đo" : (isBIO() ? "khái niệm, cơ chế, quá trình, mối liên hệ cấu trúc - chức năng" : (isVAN() ? "đặc trưng thể loại, chi tiết nghệ thuật, cách đọc hiểu và cách diễn đạt/viết phù hợp" : "thuật ngữ/công thức")))} trọng tâm.
+Kết luận, nhận định: GV chuẩn hóa kiến thức, sửa lỗi thường gặp, nhấn mạnh ${isLS() ? "sự kiện/niên đại/khái niệm" : (isVL() ? "khái niệm, định luật, mô hình, công thức và đơn vị đo" : (isBIO() ? "khái niệm, cơ chế, quá trình, mối liên hệ cấu trúc - chức năng" : (isVAN() ? "đặc trưng thể loại, chi tiết nghệ thuật, cách đọc hiểu và cách diễn đạt/viết phù hợp" : (isTOAN() ? "khái niệm, định lí/quy tắc, điều kiện áp dụng, kí hiệu và quy trình lập luận" : "thuật ngữ/công thức"))))} trọng tâm.
 ${taskLines}`;
   const hd3Gv = `Giao nhiệm vụ học tập: GV giao câu hỏi/bài tập luyện tập theo ${variant.questionFrame} cho cá nhân hoặc nhóm nhỏ.
 Thực hiện nhiệm vụ: HS hoàn thành bài tập, có thể dùng ${variant.digitalTool}, phiếu số hoặc công cụ kiểm tra kết quả theo hướng dẫn.
@@ -2818,7 +3022,9 @@ Kết luận, nhận định: GV nhận xét theo ${variant.assessmentAngle}; b�
         ? `2.2. Năng lực sinh học\n- Nhận thức sinh học: Mô tả, giải thích và sử dụng đúng khái niệm, cơ chế, quá trình, quy luật sinh học trong bài.\n- Tìm hiểu thế giới sống: Quan sát mẫu vật, hình ảnh, mô hình hoặc mô phỏng; thu thập, xử lí dữ liệu sinh học; rút ra kết luận có căn cứ.\n- Vận dụng kiến thức, kĩ năng đã học: Giải thích hiện tượng sống, liên hệ sức khoẻ, môi trường, sản xuất và đề xuất giải pháp phù hợp.`
         : isVAN()
           ? `2.2. Năng lực ngữ văn\n- Năng lực đọc: Đọc hiểu văn bản theo đặc trưng thể loại; nhận biết, phân tích và đánh giá được nội dung, nghệ thuật, thông điệp và giá trị của văn bản/ngữ liệu trong bài.\n- Năng lực viết, nói và nghe: Trình bày ý kiến, thảo luận, viết đoạn/bài hoặc sản phẩm nói nghe phù hợp yêu cầu bài học, có lí lẽ và dẫn chứng.\n- Năng lực cảm thụ và vận dụng: Liên hệ văn bản với trải nghiệm, bối cảnh văn hóa - xã hội; vận dụng kiến thức tiếng Việt và văn học để tạo lập, chỉnh sửa và chia sẻ sản phẩm ngôn ngữ phù hợp.`
-        : `2.2. Năng lực hoá học\n- Nhận thức hoá học: Mô tả, giải thích và sử dụng đúng khái niệm, quy luật, công thức trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ hoá học: Quan sát, phân tích dữ liệu, thí nghiệm hoặc mô phỏng để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống gắn với nội dung bài học.`;
+          : isTOAN()
+            ? `2.2. Năng lực toán học\n- Tư duy và lập luận toán học: Nhận biết, phân tích, so sánh, khái quát hóa và trình bày lập luận phù hợp với nội dung bài học.\n- Mô hình hóa và giải quyết vấn đề toán học: Thiết lập mô hình, lựa chọn phương pháp, thực hiện lời giải và đánh giá kết quả trong bối cảnh toán học hoặc thực tiễn.\n- Giao tiếp toán học và sử dụng công cụ học toán: Diễn đạt chính xác bằng ngôn ngữ, kí hiệu, hình vẽ, bảng/đồ thị; sử dụng máy tính cầm tay, GeoGebra/Desmos/bảng tính khi phù hợp.`
+            : `2.2. Năng lực hoá học\n- Nhận thức hoá học: Mô tả, giải thích và sử dụng đúng khái niệm, quy luật, công thức trong bài.\n- Tìm hiểu thế giới tự nhiên dưới góc độ hoá học: Quan sát, phân tích dữ liệu, thí nghiệm hoặc mô phỏng để rút ra kết luận.\n- Vận dụng kiến thức, kĩ năng đã học: Giải quyết bài tập/tình huống gắn với nội dung bài học.`;
   const map = {
     mucTieu: `1. Kiến thức\n- Trình bày và vận dụng được các nội dung trọng tâm của bài: ${ycc}\n- Liên hệ được kiến thức với hiện tượng, bài tập hoặc tình huống thực tiễn phù hợp với chủ đề "${l.bai}".\n- Bám định hướng SGV: ${sgv.focus}\n\n2. Năng lực\n2.1. Năng lực chung\n- Tự chủ và tự học: Chủ động chuẩn bị bài, khai thác học liệu và hoàn thành nhiệm vụ được giao.\n- Giao tiếp và hợp tác: Thảo luận, trình bày, phản biện kết quả học tập trong nhóm/lớp.\n- Giải quyết vấn đề và sáng tạo: Lựa chọn cách tiếp cận phù hợp để giải quyết nhiệm vụ học tập và tình huống thực tiễn.\n\n${nangLucDacThuBlock}\n\n2.3. Năng lực số tích hợp\n${nlsGoalText()}\n\n3. Phẩm chất\n- Phù hợp với ${classProfile}; điều kiện tổ chức: ${facilities}.\n- Chăm chỉ trong chuẩn bị bài, ghi chép và hoàn thành nhiệm vụ học tập.\n- Trung thực khi xử lí dữ liệu, trích dẫn nguồn và báo cáo kết quả.\n- Trách nhiệm khi hợp tác nhóm, sử dụng thiết bị và công cụ số an toàn.${commonTail}`,
     thietBi: isLS()
@@ -2829,7 +3035,9 @@ Kết luận, nhận định: GV nhận xét theo ${variant.assessmentAngle}; b�
         ? `a) Đối với giáo viên\n- SGV và SGK Sinh học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; tranh/ảnh, mẫu vật, mô hình, video/mô phỏng, bảng dữ liệu sinh học phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn sinh học, vệ sinh phòng thực hành và đạo đức khi khai thác thông tin sức khoẻ/di truyền.\n\nb) Đối với học sinh\n- SGK Sinh học ${activeGrade()}, vở ghi, thiết bị có kết nối Internet khi được GV cho phép, dụng cụ học tập/thực hành theo yêu cầu của GV.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi quan sát, nhiệm vụ thu thập/xử lí dữ liệu sinh học hoặc tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
           : isVAN()
             ? `a) Đối với giáo viên\n- SGV và SGK Ngữ văn ${activeGrade()}; kế hoạch bài dạy, phiếu học tập đọc hiểu - viết - nói nghe, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; văn bản/ngữ liệu, tranh ảnh, âm thanh, video, tư liệu văn học - ngôn ngữ phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng bản in, phiếu học tập, nghe nhìn ngoại tuyến hoặc tư liệu số tải sẵn khi kết nối Internet không ổn định; bảo đảm bản quyền học liệu và sự phù hợp của ngữ liệu.\n\nb) Đối với học sinh\n- SGK Ngữ văn ${activeGrade()}, vở ghi, dụng cụ ghi chú/đánh dấu văn bản, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi đọc hiểu, nhiệm vụ viết, nói và nghe hoặc tìm kiếm/kiểm chứng thông tin theo hướng dẫn của GV.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo đặc điểm lớp.${commonTail}`
-          : `a) Đối với giáo viên\n- SGV và SGK Hóa học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video/thí nghiệm/mô phỏng phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn khi sử dụng hóa chất, dụng cụ và thiết bị số.\n\nb) Đối với học sinh\n- SGK Hóa học ${activeGrade()}, vở ghi, máy tính cầm tay nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`,
+            : isTOAN()
+              ? `a) Đối với giáo viên\n- SGV và SGK Toán ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; bài toán/tình huống thực tiễn, hình vẽ, đồ thị, bảng số liệu, mô hình toán học phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng hình vẽ/bảng phụ/máy tính cầm tay hoặc học liệu tải sẵn khi Internet không ổn định; bảo đảm kí hiệu toán học chính xác, dữ liệu rõ nguồn và công cụ số dùng đúng mục đích.\n\nb) Đối với học sinh\n- SGK Toán ${activeGrade()}, vở ghi, máy tính cầm tay, thước/compa/êke nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, bài tập/tình huống, nhiệm vụ dựng hình, vẽ đồ thị, xử lí dữ liệu hoặc kiểm chứng kết quả theo hướng dẫn của GV.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`
+              : `a) Đối với giáo viên\n- SGV và SGK Hóa học ${activeGrade()}; kế hoạch bài dạy, phiếu học tập, bảng tiêu chí đánh giá sản phẩm học tập có cột minh chứng NLS.\n- Thiết bị/học liệu ưu tiên theo định hướng SGV: ${sgv.devices.join("; ")}.\n- Học liệu theo chương trình GDPT 2018; hình ảnh/video/thí nghiệm/mô phỏng phù hợp với bài học.\n- Học liệu và công cụ số: ${l.congcu}.\n- Phương án thay thế: dùng video/mô phỏng/học liệu số khi không đủ điều kiện thực hành trực tiếp; bảo đảm an toàn khi sử dụng hóa chất, dụng cụ và thiết bị số.\n\nb) Đối với học sinh\n- SGK Hóa học ${activeGrade()}, vở ghi, máy tính cầm tay nếu cần, thiết bị có kết nối Internet khi được GV cho phép.\n- Chuẩn bị trước yêu cầu cần đạt, câu hỏi thảo luận và nhiệm vụ tìm kiếm/kiểm chứng thông tin.\n- Sản phẩm/minh chứng cần hoàn thành: ${sgv.assessment.join("; ")}.\n- Phương án cá nhân hóa: ${teacher ? "GV/nhóm soạn " + teacher + " điều chỉnh" : "GV điều chỉnh"} theo kế hoạch tổ và đặc điểm lớp.${commonTail}`,
     hd1: activityTableHtml(hd1Gv, `- Câu trả lời/dự đoán ban đầu của HS.\n- Vấn đề học tập cần giải quyết trong bài "${l.bai}".`, nlsCodes(0, 2)),
     hd2: activityTableHtml(hd2Gv, `- Phiếu học tập hoặc vở ghi hoàn thiện theo từng đề mục.\n- Kết luận kiến thức chính bám sát yêu cầu cần đạt: ${ycc}\n- Minh chứng khai thác/kiểm chứng học liệu số nếu có.`, nlsCodes(1, 3)),
     hd3: activityTableHtml(hd3Gv, `- Bài làm/câu trả lời của HS.\n- 2-3 câu hỏi/bài tập mẫu đã được chữa và tự đánh giá.\n- Kết quả đối chiếu, sửa lỗi sau nhận xét của GV.`, nlsCodes(2, 2)),
