@@ -198,6 +198,8 @@
 
   .error-box{ background:rgba(181,83,63,.15); border:1px solid rgba(181,83,63,.4); color:#F0C9C0;
     padding:10px 12px; border-radius:var(--r-sm); font-size:12.5px; margin-top:8px; }
+  .ok-box{ background:rgba(127,174,142,.16); border:1px solid rgba(127,174,142,.38); color:#EAF2DD;
+    padding:10px 12px; border-radius:var(--r-sm); font-size:12.5px; margin-top:8px; }
 
   ::-webkit-scrollbar{ width:9px; }
   ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:5px; }
@@ -208,6 +210,17 @@
   .mini-actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
   .btn-soft{ background:rgba(127,174,142,.16); color:#EAF2DD; border:1px solid rgba(127,174,142,.32); }
   .btn-soft:hover{ background:rgba(127,174,142,.24); }
+  .api-key-panel{
+    background:rgba(226,170,78,.12);
+    border:1px solid rgba(226,170,78,.36);
+    border-radius:var(--r-sm);
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .api-key-panel label{ color:#F1D7A4; }
+  .api-key-panel .hint{ font-size:11.5px; line-height:1.45; color:rgba(255,246,221,.78); }
   .dept-entry{ display:flex; flex-direction:column; gap:8px; }
   .dept-entry-copy{ color:#DDD6BE; font-size:12px; line-height:1.45; }
   .dept-canvas{ display:none; }
@@ -556,9 +569,10 @@
 
     <div class="sidebar-section-title">Soạn và lưu</div>
 
-    <div class="field">
-      <label>API Key (chỉ cần khi mở file ngoài claude.ai)</label>
+    <div class="field api-key-panel">
+      <label>Kết nối AI online - API Key</label>
       <input type="password" id="inpApiKey" placeholder="sk-ant-...">
+      <div class="hint">Không bắt buộc. Nếu để trống, app tạo bản nháp offline. Muốn dùng AI online, dán Anthropic API key vào đây rồi bấm “Tạo kế hoạch bài dạy bằng AI”.</div>
     </div>
 
     <div class="action-stack">
@@ -703,6 +717,11 @@ async function initAccessGate(){
       const check = await serverValidateCode(session.code);
       if(check.valid){
         document.body.classList.remove("access-locked");
+        return;
+      }
+      if(check.reason === "network_error"){
+        document.body.classList.remove("access-locked");
+        showToast("Máy chủ xác thực tạm ngưng; đã dùng phiên truy cập đã lưu trên máy này.");
         return;
       }
     }catch(e){}
@@ -3053,11 +3072,29 @@ Kết luận, nhận định: GV nhận xét theo ${variant.assessmentAngle}; b�
 // viên mở file sẽ dùng chung được tính năng AI mà không cần tự nhập API key,
 // và key thật KHÔNG hề xuất hiện trong file này hay trong trình duyệt của họ.
 // Để trống ("") nếu vẫn muốn dùng cách cũ: mỗi người tự nhập key riêng.
-const AI_PROXY_URL = "https://khbd-nk.onrender.com"; // ví dụ: "https://khbd-proxy.ten-ban.workers.dev"
+const AI_PROXY_URL = ""; // Điền URL proxy mới khi đã deploy ổn định, ví dụ: "https://khbd-ai-proxy.ten-ban.workers.dev"
 // Nếu bạn đặt APP_SHARED_SECRET ở phía Worker (bước 6 trong file proxy), điền
 // đúng chuỗi đó vào đây để app được phép gọi qua proxy. Để trống nếu Worker
 // không bật kiểm tra mã này.
 const APP_SHARED_SECRET = "";
+const AI_PROXY_TIMEOUT_MS = 15000;
+const AI_PROXY_COOLDOWN_MS = 10 * 60 * 1000;
+
+function isAiProxyCoolingDown(){
+  return Number(localStorage.getItem("khbd-ai-proxy-cooldown-until") || 0) > Date.now();
+}
+function markAiProxyCoolingDown(){
+  localStorage.setItem("khbd-ai-proxy-cooldown-until", String(Date.now() + AI_PROXY_COOLDOWN_MS));
+}
+async function fetchWithTimeout(url, options={}, timeoutMs=AI_PROXY_TIMEOUT_MS){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try{
+    return await fetch(url, { ...options, signal: controller.signal });
+  }finally{
+    clearTimeout(timer);
+  }
+}
 
 async function callClaude(sectionAsk){
   const body = {
@@ -3071,7 +3108,8 @@ async function callClaude(sectionAsk){
   const apiKey = $("inpApiKey").value.trim();
   const headers = { "Content-Type": "application/json" };
   let url = "https://api.anthropic.com/v1/messages";
-  if(AI_PROXY_URL){
+  const useProxy = AI_PROXY_URL && !apiKey && !isAiProxyCoolingDown();
+  if(useProxy){
     url = AI_PROXY_URL;
     if(APP_SHARED_SECRET) headers["X-App-Secret"] = APP_SHARED_SECRET;
     try{
@@ -3083,23 +3121,32 @@ async function callClaude(sectionAsk){
     headers["x-api-key"] = apiKey;
     headers["anthropic-version"] = "2023-06-01";
     headers["anthropic-dangerous-direct-browser-access"] = "true";
+  } else {
+    throw new Error(AI_PROXY_URL
+      ? "Máy chủ AI trung gian đang tạm ngưng. Ứng dụng chuyển sang bản nháp offline trong vài phút để không gián đoạn soạn bài."
+      : "Chưa có API key. Ứng dụng chuyển sang bản nháp offline theo Kế hoạch Tổ.");
   }
   let res;
   try{
-    res = await fetch(url, {
+    res = await fetchWithTimeout(url, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
-    });
+    }, useProxy ? AI_PROXY_TIMEOUT_MS : 30000);
   }catch(networkErr){
-    throw new Error(AI_PROXY_URL
-      ? "Không kết nối được tới máy chủ trung gian (" + AI_PROXY_URL + "). Kiểm tra lại URL hoặc server proxy có đang hoạt động không."
+    if(useProxy) markAiProxyCoolingDown();
+    throw new Error(useProxy
+      ? "Máy chủ AI trung gian đang tạm ngưng hoặc phản hồi quá chậm. Ứng dụng đã tự chuyển sang bản nháp offline; thử lại AI sau ít phút hoặc nhập API key để gọi trực tiếp."
       : "Không kết nối được tới máy chủ AI. Nếu bạn đang mở file này NGOÀI claude.ai (đã tải file .html về máy / mở độc lập), bạn cần dán API Key của Anthropic vào ô \"API Key\" ở thanh bên rồi thử lại.");
   }
   if(!res.ok){
     const t = await res.text().catch(()=> "");
+    if(useProxy) markAiProxyCoolingDown();
     if((res.status === 401 || res.status === 403) && !apiKey && !AI_PROXY_URL){
       throw new Error("Chưa xác thực được với máy chủ AI (mã " + res.status + "). Tính năng gọi AI trực tiếp chỉ tự hoạt động khi file được mở BÊN TRONG khung Artifact của claude.ai. Nếu bạn đang mở file độc lập (đã tải về máy), hãy dán API Key Anthropic của bạn vào ô \"API Key\" ở thanh bên rồi bấm lại.");
+    }
+    if(useProxy){
+      throw new Error("Máy chủ AI trung gian chưa sẵn sàng (mã " + res.status + "). Ứng dụng đã chuyển sang bản nháp offline; thử lại AI sau ít phút.");
     }
     throw new Error("Lỗi gọi mô hình (" + res.status + "). " + t.slice(0,200));
   }
@@ -3153,7 +3200,7 @@ async function fillSections({ offline=false, variant=false } = {}){
       const fallbackText = buildFallbackSection(sec.key);
       if(/^\s*</.test(fallbackText)) el.innerHTML = fallbackText;
       else el.textContent = fallbackText;
-      $("errorWrap").innerHTML = `<div class="error-box">⚠ Không kết nối được AI ở phần ${esc(sec.label)}. Ứng dụng đã hoàn tất bản nháp theo Kế hoạch Tổ để bạn tiếp tục chỉnh sửa. ${esc(err.message)}</div>`;
+      $("errorWrap").innerHTML = `<div class="ok-box">AI chưa sẵn sàng ở phần ${esc(sec.label)}. Ứng dụng đã tự chuyển sang bản nháp offline theo Kế hoạch Tổ để cô tiếp tục chỉnh sửa. ${esc(err.message)}</div>`;
     }
   }
   $("progressFill").style.width = "100%";
@@ -3172,7 +3219,7 @@ async function fillSections({ offline=false, variant=false } = {}){
 function wait(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 function generateAll(){
   if(!AI_PROXY_URL && !$("inpApiKey").value.trim()){
-    showToast("Chưa có API key: ứng dụng sẽ tạo bản nháp theo Kế hoạch Tổ. Nhập API key để soạn bằng AI trực tiếp.");
+    showToast("Chưa có API key: ứng dụng tạo bản nháp offline. Nhập API key để dùng AI online.");
     return fillSections({ offline:true });
   }
   return fillSections({ offline:false });
@@ -3299,9 +3346,10 @@ function initDefaults(){
   if(!$("inpNgay").value){
     $("inpNgay").value = new Date().toLocaleDateString("vi-VN");
   }
-  if(AI_PROXY_URL){
-    const apiField = $("inpApiKey")?.closest(".field");
-    if(apiField) apiField.style.display = "none";
+  const apiField = $("inpApiKey")?.closest(".field");
+  if(apiField && AI_PROXY_URL){
+    const hint = apiField.querySelector(".hint");
+    if(hint) hint.textContent = "Không bắt buộc. Khi máy chủ AI trung gian tạm ngưng, có thể nhập API key để gọi AI trực tiếp trên máy này.";
   }
 }
 ["inpTiet","inpNgay","inpNote","txtYccd","txtDeptPlan","inpDeptName","inpSchoolYear"].forEach(id => {
